@@ -182,35 +182,43 @@ if (typeof supabase !== 'undefined') {
 
 // --- Dashboard Functionality ---
 
+let currentSession = null;
+
 async function authenticatedFetch(url, options = {}) {
     if (!supabaseClient) {
         console.warn('Supabase client not initialized, using basic fetch');
         return fetch(url, options);
     }
-    
+
     try {
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) {
-            console.error('Supabase getSession error:', error);
-            throw new Error(`Auth session error: ${error.message}`);
+        // Try to use cached session first for speed, then refresh if needed
+        if (!currentSession) {
+            const { data } = await supabaseClient.auth.getSession();
+            currentSession = data.session;
         }
-        
-        const token = data.session?.access_token;
+
+        const token = currentSession?.access_token;
         const headers = new Headers(options.headers || {});
-        
+
         if (token) {
             headers.set('Authorization', 'Bearer ' + token);
-        } else {
-            console.warn('No active session found for authenticatedFetch');
         }
-    
-        const response = await fetch(url, { ...options, headers });
+
+        let response = await fetch(url, { ...options, headers });
+
+        // If 401, token might be expired, refresh once
+        if (response.status === 401) {
+            const { data } = await supabaseClient.auth.refreshSession();
+            currentSession = data.session;
+            if (currentSession?.access_token) {
+                headers.set('Authorization', 'Bearer ' + currentSession.access_token);
+                response = await fetch(url, { ...options, headers });
+            }
+        }
+
         return response;
     } catch (e) {
         console.error('authenticatedFetch error:', e);
-        if (e.message.includes('Failed to fetch')) {
-            throw new Error('Network error: Could not reach the server. Please check your internet connection or ngrok status.');
-        }
         throw e;
     }
 }
@@ -221,51 +229,76 @@ async function safeJson(response) {
         return await response.json();
     } else {
         const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        return { error: "Server error (Non-JSON response)" };
+        return { error: "Server error" };
     }
 }
 
 
-// Agent State Management (Now driven by API)
+// Agent State Management
 let agents = [];
+let leads = [];
+let dashboardLoading = false;
 
-async function fetchAgents() {
+async function refreshDashboardData() {
+    if (!currentUser || dashboardLoading) return;
+
     try {
-        const response = await authenticatedFetch('/api/agents');
-        if (response.ok) {
-            agents = await safeJson(response);
+        // Fetch agents and leads in parallel for speed
+        const [agentsRes, leadsRes] = await Promise.all([
+            authenticatedFetch('/api/agents'),
+            authenticatedFetch('/api/leads')
+        ]);
+
+        if (agentsRes.ok) {
+            agents = await safeJson(agentsRes);
             renderAgents();
-            populateAnalyticsAgentFilter(); // Populate the new filter
-            updateAnalyticsChart(); // Update chart when agents load
-            
-            // Only show onboarding on first load if we have no agents
+            populateAnalyticsAgentFilter();
+            if (window.activeView === 'analytics') updateAnalyticsChart();
+
             if (agents.length === 0 && !window.onboardingShown) {
                 window.onboardingShown = true;
                 checkAndShowOnboarding(agents);
             }
         }
+
+        if (leadsRes.ok) {
+            const newLeads = await safeJson(leadsRes);
+
+            // Notification Logic
+            if (Notification.permission === 'granted' && leads.length > 0) {
+                newLeads.forEach(lead => {
+                    const oldCount = leads.find(l => l.chatId === lead.chatId)?.history.length || 0;
+                    const count = lead.history.length;
+                    const lastMsg = lead.history[count - 1];
+                    if (count > oldCount && lastMsg && lastMsg.role === 'user') {
+                        new Notification(`New message from ${lead.username || 'User'}`, { body: lastMsg.content });
+                    }
+                });
+            }
+
+            leads = newLeads;
+            renderInboxLeads();
+            if (selectedLeadId) updateChatHistory(selectedLeadId);
+            if (window.activeView === 'analytics') updateAnalyticsChart();
+        }
     } catch (e) {
-        console.error('Failed to fetch agents:', e);
+        console.error('Data refresh failed:', e);
     }
 }
 
-function populateAnalyticsAgentFilter() {
-    const filter = document.getElementById('analytics-agent-filter');
-    if (!filter) return;
-    
-    const currentVal = filter.value;
-    filter.innerHTML = '<option value="all">All Agents</option>';
-    
-    agents.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.id;
-        option.textContent = agent.name;
-        filter.appendChild(option);
-    });
-    
-    if ([...filter.options].some(o => o.value === currentVal)) {
-        filter.value = currentVal;
+// Initial fetch is now handled by auth state change
+let dashboardPollInterval = null;
+
+function startDashboardPolling() {
+    if (dashboardPollInterval) clearInterval(dashboardPollInterval);
+    refreshDashboardData(); // Initial call
+    dashboardPollInterval = setInterval(refreshDashboardData, 8000); // 8s poll is enough
+}
+
+function stopDashboardPolling() {
+    if (dashboardPollInterval) {
+        clearInterval(dashboardPollInterval);
+        dashboardPollInterval = null;
     }
 }
 
@@ -289,20 +322,21 @@ function renderAgents() {
                 const statusText = agent.isActive ? 'Running • Listening' : 'Idle';
                 const activeClass = agent.isActive ? 'active' : '';
                 const isOwner = currentUser && agent.user_id === currentUser.id;
-                
-                activeAgentsList.innerHTML += `
-                    <div class="agent-item">
-                        <div class="agent-avatar" style="background: var(--accent);">${agent.name.charAt(0).toUpperCase()}</div>
-                        <div class="agent-info">
-                            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                <p class="name">${agent.name}</p>
-                                ${!isOwner ? '<span style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.2);">Team</span>' : ''}
-                            </div>
-                            <p class="status ${statusClass}">${statusText}</p>
+
+                const item = document.createElement('div');
+                item.className = 'agent-item';
+                item.innerHTML = `
+                    <div class="agent-avatar" style="background: var(--accent);">${agent.name.charAt(0).toUpperCase()}</div>
+                    <div class="agent-info">
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <p class="name">${agent.name}</p>
+                            ${!isOwner ? '<span style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.2);">Team</span>' : ''}
                         </div>
-                        <div class="agent-toggle ${activeClass}" data-id="${agent.id}"></div>
+                        <p class="status ${statusClass}">${statusText}</p>
                     </div>
+                    <div class="agent-toggle ${activeClass}" data-id="${agent.id}"></div>
                 `;
+                activeAgentsList.appendChild(item);
             });
         }
     }
@@ -316,40 +350,41 @@ function renderAgents() {
             agents.forEach(agent => {
                 const activeClass = agent.isActive ? 'active' : '';
                 const isOwner = currentUser && agent.user_id === currentUser.id;
-                
-                agentsGridContainer.innerHTML += `
-                    <div class="agent-card">
-                        <div class="agent-card-header">
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <div class="agent-avatar" style="background: var(--accent); color: #fff;">${agent.name.charAt(0).toUpperCase()}</div>
-                                ${!isOwner ? '<span style="font-size: 0.7rem; padding: 0.2rem 0.6rem; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.2); font-weight: 600;">Team Access</span>' : ''}
-                            </div>
-                            <div class="agent-toggle ${activeClass}" data-id="${agent.id}"></div>
+
+                const card = document.createElement('div');
+                card.className = 'agent-card';
+                card.innerHTML = `
+                    <div class="agent-card-header">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="agent-avatar" style="background: var(--accent); color: #fff;">${agent.name.charAt(0).toUpperCase()}</div>
+                            ${!isOwner ? '<span style="font-size: 0.7rem; padding: 0.2rem 0.6rem; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.2); font-weight: 600;">Team Access</span>' : ''}
                         </div>
-                        <h3 style="margin: 1rem 0 0.25rem;">${agent.name}</h3>
-                        <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${agent.prompt}</p>
-                        <p style="color: var(--fg-light); font-size: 0.75rem; margin-bottom: 1.5rem; font-family: monospace;">Model: ${agent.model}</p>
-                        
-                        <div class="agent-metrics">
-                            <div><span style="font-weight: 700;">${agent.tokensUsed || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Tokens</span></div>
-                            <div><span style="font-weight: 700;">${agent.uniqueUsers || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Users</span></div>
-                            <div><span style="font-weight: 700;">${agent.messagesSent || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Messages</span></div>
-                        </div>
-                        <div style="display: ${isOwner ? 'flex' : 'none'}; gap: 0.5rem; margin-top: 1.5rem;">
-                            <button class="btn btn-secondary w-full edit-agent-btn" data-id="${agent.id}" style="padding: 0.4rem;">Edit</button>
-                            <button class="btn btn-secondary w-full delete-agent-btn" data-id="${agent.id}" style="padding: 0.4rem; color: #ef4444;">Delete</button>
-                        </div>
+                        <div class="agent-toggle ${activeClass}" data-id="${agent.id}"></div>
+                    </div>
+                    <h3 style="margin: 1rem 0 0.25rem;">${agent.name}</h3>
+                    <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${agent.prompt}</p>
+                    <p style="color: var(--fg-light); font-size: 0.75rem; margin-bottom: 1.5rem; font-family: monospace;">Model: ${agent.model}</p>
+
+                    <div class="agent-metrics">
+                        <div><span style="font-weight: 700;">${agent.tokensUsed || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Tokens</span></div>
+                        <div><span style="font-weight: 700;">${agent.uniqueUsers?.length || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Users</span></div>
+                        <div><span style="font-weight: 700;">${agent.messagesSent || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Messages</span></div>
+                    </div>
+                    <div style="display: ${isOwner ? 'flex' : 'none'}; gap: 0.5rem; margin-top: 1.5rem;">
+                        <button class="btn btn-secondary w-full edit-agent-btn" data-id="${agent.id}" style="padding: 0.4rem;">Edit</button>
+                        <button class="btn btn-secondary w-full delete-agent-btn" data-id="${agent.id}" style="padding: 0.4rem; color: #ef4444;">Delete</button>
                     </div>
                 `;
+                agentsGridContainer.appendChild(card);
             });
         }
     }
-    
+
     // Update overview stats
     if (dashTotalTokens && dashActiveAgents) {
         let totalTokens = agents.reduce((sum, a) => sum + (a.tokensUsed || 0), 0);
         let activeCount = agents.filter(a => a.isActive).length;
-        let totalUniqueUsers = agents.reduce((sum, a) => sum + (a.uniqueUsers || 0), 0);
+        let totalUniqueUsers = agents.reduce((sum, a) => sum + (a.uniqueUsers?.length || 0), 0);
 
         dashTotalTokens.textContent = totalTokens.toLocaleString();
         dashActiveAgents.textContent = activeCount;
@@ -366,16 +401,16 @@ function renderAgents() {
         if (currentUserPlan === 'pro') limit = 10;
         else if (currentUserPlan === 'starter') limit = 3;
         else if (currentUserPlan === 'enterprise') limit = 999;
-        
+
         // Count ONLY owned agents
         const ownedAgents = agents.filter(a => currentUser && a.user_id === currentUser.id).length;
-        
+
         settingsAgentLimit.textContent = `${ownedAgents} / ${limit === 999 ? 'Unlimited' : limit}`;
         const percent = limit === 999 ? 0 : Math.min((ownedAgents / limit) * 100, 100);
         settingsAgentProgress.style.width = `${percent}%`;
         settingsAgentProgress.style.background = (limit !== 999 && ownedAgents >= limit) ? '#ef4444' : '#8b5cf6';
     }
-    }
+}
 // Initial fetch
 fetchAgents();
 fetchLeads();
