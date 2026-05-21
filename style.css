@@ -1893,13 +1893,13 @@ p {
 @media (max-width: 992px) {
   .mockup-inner {
     grid-template-columns: 1fr !important;
-    height: 450px !important;
+    height: auto !important;
+    min-height: 400px !important;
   }
   .mockup-inner > div:first-child {
     display: none !important;
   }
 }
-
 /* Tablet & Mobile Layout Adaptations */
 @media (max-width: 768px) {
   :root {
@@ -2023,7 +2023,7 @@ p {
   /* Dashboard Stats Grid to Inline Rows */
   .stats-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.75rem !important;
     width: 100%;
   }
@@ -2103,7 +2103,8 @@ p {
   .hero-mockup {
     margin-top: 3.5rem !important;
     margin-bottom: 1.5rem !important;
-    max-height: 380px !important;
+    max-height: none !important;
+    height: auto !important;
     transform: none !important;
   }
   .hero-mockup:hover {
@@ -2113,7 +2114,7 @@ p {
   .mockup-body { 
     padding: 1.25rem 1rem !important; 
     gap: 1rem !important;
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
   }
   .chat-bubble {
