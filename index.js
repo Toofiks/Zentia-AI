@@ -415,8 +415,10 @@ function startBot(agent) {
             }
             
             const isLead = aiResponse.includes('[LEAD_QUALIFIED]') || 
+                           aiResponse.includes('[MEETING_BOOKED]') ||
                            aiResponse.toLowerCase().includes('договорились') || 
-                           aiResponse.toLowerCase().includes('успешного обучения');
+                           aiResponse.toLowerCase().includes('успешного обучения') ||
+                           aiResponse.toLowerCase().includes('оплат');
 
             // Check if already a lead
             const { data: existingLeads } = await supabase.from('leads')
