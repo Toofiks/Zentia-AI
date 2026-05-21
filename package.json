@@ -20,6 +20,7 @@
     "express-rate-limit": "^8.5.2",
     "fs-extra": "^11.3.5",
     "multer": "^2.1.1",
+    "node-fetch": "^3.3.2",
     "openai": "^6.37.0",
     "pdf-parse": "^2.4.5",
     "stripe": "^22.1.1",

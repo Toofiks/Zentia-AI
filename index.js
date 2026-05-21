@@ -175,7 +175,6 @@ function startBot(agent) {
                 let placeholder = await ctx.reply('Listening...');
                 const fileLink = await ctx.telegram.getFileLink(ctx.message.voice.file_id);
                 
-                const fetch = (await import('node-fetch')).default;
                 const response = await fetch(fileLink.href);
                 const buffer = await response.arrayBuffer();
                 const fs = await import('fs/promises');
@@ -771,7 +770,6 @@ app.post('/api/agents', authMiddleware, async (req, res) => {
         if (token) {
             console.log(`[API] Validating Telegram token for agent: ${name}`);
             try {
-                const fetch = (await import('node-fetch')).default;
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
                 
@@ -828,7 +826,6 @@ app.put('/api/agents/:id', authMiddleware, async (req, res) => {
     // Validate Telegram Token if it has changed
     if (token && token !== agent.token) {
         try {
-            const fetch = (await import('node-fetch')).default;
             const tgRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
             if (!tgRes.ok) {
                 return res.status(400).json({ error: 'Invalid Telegram Bot Token. Update aborted.' });
