@@ -411,14 +411,6 @@ function renderAgents() {
         settingsAgentProgress.style.background = (limit !== 999 && ownedAgents >= limit) ? '#ef4444' : '#8b5cf6';
     }
 }
-// Initial fetch
-fetchAgents();
-fetchLeads();
-// Poll every 5 seconds for live analytics and leads
-setInterval(() => {
-    fetchAgents();
-    fetchLeads();
-}, 5000);
 
 // Mobile Header Utilities
 document.getElementById('mobile-settings-btn')?.addEventListener('click', () => {
