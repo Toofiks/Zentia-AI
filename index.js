@@ -257,6 +257,40 @@ function startBot(agent) {
             console.error(`[Bot ${agent.id}] Session DB Fetch Error:`, e.message);
         }
 
+        // --- TAKEOVER LOGIC & EARLY SAVE ---
+        const lastDisabled = session.history.map(m => m.content).lastIndexOf('[AI_DISABLED]');
+        const lastEnabled = session.history.map(m => m.content).lastIndexOf('[AI_ENABLED]');
+        let aiDisabled = lastDisabled > lastEnabled;
+
+        const userMsgObj = { role: "user", content: typeof messageContent === 'string' ? messageContent : '[Photo/Voice]', message_id: ctx.message.message_id };
+        session.history.push(userMsgObj);
+        if (session.history.length > 20) session.history = session.history.slice(-20);
+
+        try {
+            if (sessionId) {
+                await supabase.from('chat_sessions').update({ history: session.history, updated_at: new Date().toISOString() }).eq('id', sessionId);
+            } else {
+                const { data: newSession } = await supabase.from('chat_sessions').insert({ chatId, agentId: agent.id, history: session.history }).select('id').single();
+                if (newSession) sessionId = newSession.id;
+            }
+        } catch (dbErr) {
+            console.error(`[Bot ${agent.id}] Session Early Save Error:`, dbErr.message);
+        }
+
+        try {
+            const { data: earlyLeads } = await supabase.from('leads').select('id, status, history').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
+            if (earlyLeads && earlyLeads.length > 0) {
+                const leadHistory = [...(earlyLeads[0].history || []), userMsgObj];
+                await supabase.from('leads').update({ history: leadHistory, lastMessage: userMessage, timestamp: new Date().toISOString() }).eq('id', earlyLeads[0].id);
+            }
+        } catch (e) { console.error('Immediate lead save error:', e.message); }
+
+        if (aiDisabled) {
+            console.log(`[Bot ${agent.id}] AI disabled for chat ${chatId} (Human Takeover). Ignoring message.`);
+            return; // Stop AI processing
+        }
+        // --- END TAKEOVER LOGIC ---
+
         try {
             const baseInstruction = "You are a highly focused professional representative. STRICT TOPIC ENFORCEMENT. If the conversation successfully reaches its GOAL, you MUST add [LEAD_QUALIFIED] at the end. If the user agrees to a meeting or demo, you MUST add [MEETING_BOOKED] at the end. NEVER use bold formatting (**), italics (*), or any special characters (like dots or bullets) for text highlighting. Provide clean plain text only. NEVER MENTION THAT YOU ARE AN AI, BOT, OR LARGE LANGUAGE MODEL. Always maintain the persona of a human team member.";
             let dynamicSystemPrompt = `${baseInstruction}\n\nAGENT CONFIGURATION:\n${agent.prompt}`;
@@ -1028,120 +1062,29 @@ app.put('/api/leads/:chatId/status', authMiddleware, async (req, res) => {
     }
 });
 
-app.delete('/api/leads/:chatId/messages/:index', authMiddleware, async (req, res) => {
-    const { chatId, index } = req.params;
-    const { agentId } = req.query;
-    const uiIndex = parseInt(index);
-
+app.put('/api/leads/:chatId/ai-toggle', authMiddleware, async (req, res) => {
+    const { chatId } = req.params;
+    const { agentId, aiDisabled } = req.body;
+    
     try {
-        // 1. Fetch Lead
-        let query = supabase.from('leads')
-            .select('id, history, agentId, user_id')
-            .eq('chatId', chatId);
-            
-        if (agentId) {
-            query = query.eq('agentId', agentId);
-        }
-
-        const { data: lead, error: fetchErr } = await query.limit(1).single();
-
-        if (fetchErr || !lead) return res.status(404).json({ error: 'Lead not found' });
-
-        console.log(`[Security Debug] Attempting delete. ReqUser: ${req.user.id}, LeadUser: ${lead.user_id}, AgentId: ${lead.agentId}`);
-
-        // Security: Direct DB check for absolute reliability
-        const { data: agentData, error: agentErr } = await supabase.from('agents').select('user_id').eq('id', lead.agentId).limit(1).single();
+        const { data: lead } = await supabase.from('leads').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
+        if (!lead) return res.status(404).json({ error: 'Lead not found' });
         
-        if (agentErr) console.error(`[Security Debug] Agent Fetch Error:`, agentErr.message);
-        console.log(`[Security Debug] AgentOwner from DB: ${agentData?.user_id}`);
-
-        const managedIds = await getManagedAgentIds(req.user.email);
-        console.log(`[Security Debug] User managed IDs:`, managedIds);
+        const history = lead.history || [];
+        history.push({ role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' });
         
-        const isOwner = (agentData && agentData.user_id === req.user.id) || (lead.user_id === req.user.id);
-        const isManager = managedIds.includes(lead.agentId);
-
-        console.log(`[Security Debug] Result -> isOwner: ${isOwner}, isManager: ${isManager}`);
-
-        if (!isOwner && !isManager) {
-            console.warn(`[Security Failure] Access Denied.`);
-            return res.status(403).json({ 
-                error: 'Forbidden', 
-                message: `Permission denied. Your ID: ${req.user.id}. Required Owner ID: ${agentData?.user_id || lead.user_id}` 
-            });
-        }
-
-        // 2. Map UI index to Real index (handling filtered system messages)
-        let history = lead.history || [];
-        let realIndex = -1;
-        let currentUiCounter = 0;
-
-        for (let i = 0; i < history.length; i++) {
-            if (history[i].role !== 'system') {
-                if (currentUiCounter === uiIndex) {
-                    realIndex = i;
-                    break;
-                }
-                currentUiCounter++;
-            }
-        }
-
-        if (realIndex !== -1) {
-            const deletedMsg = history[realIndex];
-            history.splice(realIndex, 1);
-            
-            // Delete from Telegram if message_id exists
-            if (deletedMsg && deletedMsg.message_id) {
-                const agent = agents.get(lead.agentId);
-                if (agent && agent.botInstance) {
-                    try {
-                        await agent.botInstance.telegram.deleteMessage(chatId, deletedMsg.message_id);
-                        console.log(`[Bot ${agent.id}] Deleted message ${deletedMsg.message_id} from Telegram.`);
-                    } catch (tgErr) {
-                        console.error(`[Bot ${agent.id}] Failed to delete from Telegram:`, tgErr.message);
-                    }
-                }
-            }
-        } else {
-            return res.status(400).json({ error: 'Message not found at index ' + uiIndex });
-        }
-
-        // 3. Update Lead in DB
         await supabase.from('leads').update({ history }).eq('id', lead.id);
-
-        // 4. Update active chat session if exists
-        try {
-            const { data: session } = await supabase.from('chat_sessions')
-                .select('id, history')
-                .eq('chatId', chatId)
-                .eq('agentId', lead.agentId)
-                .limit(1)
-                .single();
-            
-            if (session) {
-                let sHistory = session.history || [];
-                // Simple sync for session as well
-                let sRealIndex = -1;
-                let sUiCounter = 0;
-                for (let i = 0; i < sHistory.length; i++) {
-                    if (sHistory[i].role !== 'system') {
-                        if (sUiCounter === uiIndex) {
-                            sRealIndex = i;
-                            break;
-                        }
-                        sUiCounter++;
-                    }
-                }
-                if (sRealIndex !== -1) {
-                    sHistory.splice(sRealIndex, 1);
-                    await supabase.from('chat_sessions').update({ history: sHistory }).eq('id', session.id);
-                }
-            }
-        } catch (e) { console.warn('Session sync on delete failed'); }
-
-        res.json({ success: true });
+        
+        const { data: sessionData } = await supabase.from('chat_sessions').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
+        if (sessionData) {
+            const sessHistory = sessionData.history || [];
+            sessHistory.push({ role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' });
+            await supabase.from('chat_sessions').update({ history: sessHistory }).eq('id', sessionData.id);
+        }
+        
+        res.json({ success: true, aiDisabled });
     } catch (e) {
-        console.error('Delete message API error:', e);
+        console.error('Toggle AI error:', e);
         res.status(500).json({ error: e.message });
     }
 });

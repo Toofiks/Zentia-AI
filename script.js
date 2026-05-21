@@ -654,19 +654,18 @@ function updateChatHistory(chatId) {
         if (msg.role === 'system') return;
         const bubble = document.createElement('div');
         bubble.className = `chat-bubble ${msg.role === 'assistant' ? 'bot' : 'user'}`;
-        bubble.textContent = msg.content;
         
-        // Add delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-msg-btn';
-        deleteBtn.innerHTML = '&times;';
-        deleteBtn.title = 'Delete message';
-        deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteMessage(chatId, index);
-        };
-        bubble.appendChild(deleteBtn);
+        let contentHtml = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+        // Clean up markdown for rendering
+        contentHtml = contentHtml.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        contentHtml = contentHtml.replace(/\*(.*?)\*/g, '<em>$1</em>');
         
+        if (msg.role === 'assistant') {
+            bubble.innerHTML = `<span class="cemoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg></span>${contentHtml}`;
+        } else {
+            bubble.innerHTML = contentHtml;
+        }
+
         historyEl.appendChild(bubble);
     });
 
@@ -714,38 +713,6 @@ function showConfirm(title, message, actionText = 'Delete', isDestructive = true
         confirmModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     });
-}
-
-async function deleteMessage(chatId, messageIndex) {
-    const confirmed = await showConfirm(
-        'Delete message?', 
-        'Are you sure you want to delete this message? This will remove it from the chat history permanently.'
-    );
-    if (!confirmed) return;
-    
-    try {
-        const lead = leads.find(l => l.chatId === chatId);
-        if (!lead) throw new Error('Lead context not found locally');
-        
-        // We need to find the REAL index in lead.history (including system messages)
-        // OR the backend needs to handle the filtered index.
-        // Current selectLead logic filters OUT system messages for UI.
-        // The API currently takes a raw index. Let's fix the API or the call.
-        
-        const res = await authenticatedFetch(`/api/leads/${chatId}/messages/${messageIndex}?agentId=${lead.agentId}`, {
-            method: 'DELETE'
-        });
-        if (res.ok) {
-            showToast('Message deleted', 'success');
-            await fetchLeads(); // Refresh leads to update history
-        } else {
-            const errData = await safeJson(res);
-            showToast(errData.error || 'Failed to delete message', 'error');
-        }
-    } catch (e) {
-        console.error('Delete message error:', e);
-        showToast('Error: ' + e.message, 'error');
-    }
 }
 
 function renderInboxLeads() {
