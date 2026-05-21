@@ -792,6 +792,51 @@ function selectLead(chatId) {
 
     const txtBtn = document.getElementById('export-chat-txt-btn');
     if (txtBtn) txtBtn.style.display = 'flex';
+    
+    // --- TAKEOVER LOGIC ---
+    const takeoverBtn = document.getElementById('takeover-btn');
+    if (takeoverBtn) {
+        takeoverBtn.style.display = 'block';
+        const lastDisabled = (lead.history || []).map(m => m.content).lastIndexOf('[AI_DISABLED]');
+        const lastEnabled = (lead.history || []).map(m => m.content).lastIndexOf('[AI_ENABLED]');
+        const aiDisabled = lastDisabled > lastEnabled;
+        
+        if (aiDisabled) {
+            takeoverBtn.textContent = 'Resume AI';
+            takeoverBtn.style.background = '#10b981';
+            takeoverBtn.style.borderColor = '#10b981';
+        } else {
+            takeoverBtn.textContent = 'Pause AI';
+            takeoverBtn.style.background = '#ef4444';
+            takeoverBtn.style.borderColor = '#ef4444';
+        }
+        
+        // Re-bind to prevent multiple listeners
+        takeoverBtn.replaceWith(takeoverBtn.cloneNode(true));
+        document.getElementById('takeover-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('takeover-btn');
+            const willDisable = btn.textContent === 'Pause AI';
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+            try {
+                const response = await authenticatedFetch(`/api/leads/${lead.chatId}/ai-toggle`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId: lead.agentId, aiDisabled: willDisable })
+                });
+                if (response.ok) {
+                    showToast(`AI has been ${willDisable ? 'paused' : 'resumed'}.`, 'success');
+                    refreshDashboardData(); // Refresh history immediately
+                } else {
+                    throw new Error('Failed to toggle AI');
+                }
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+            btn.disabled = false;
+        });
+    }
+    // --- END TAKEOVER LOGIC ---
 
     // Mobile UI Transition
     if (window.innerWidth <= 768) {
