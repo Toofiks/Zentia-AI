@@ -384,7 +384,7 @@ function renderAgents() {
     if (dashTotalTokens && dashActiveAgents) {
         let totalTokens = agents.reduce((sum, a) => sum + (a.tokensUsed || 0), 0);
         let activeCount = agents.filter(a => a.isActive).length;
-        let totalUniqueUsers = agents.reduce((sum, a) => sum + (a.uniqueUsers?.length || 0), 0);
+        let totalUniqueUsers = agents.reduce((sum, a) => sum + (a.uniqueUsers || 0), 0);
 
         dashTotalTokens.textContent = totalTokens.toLocaleString();
         dashActiveAgents.textContent = activeCount;
