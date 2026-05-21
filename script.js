@@ -564,7 +564,6 @@ function renderUsersTable() {
 }
 
 // Inbox Functionality
-let leads = [];
 let selectedLeadId = null;
 
 const inboxSendBtn = document.querySelector('.inbox-input button');
