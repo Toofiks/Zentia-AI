@@ -855,7 +855,7 @@ document.body.addEventListener('click', async (e) => {
         
         try {
             const res = await authenticatedFetch(`/api/agents/${agentId}/toggle`, { method: 'PUT' });
-            if (res.ok) await fetchAgents();
+            if (res.ok) await refreshDashboardData();
         } catch (err) { console.error('Failed to toggle agent'); }
     }
     
@@ -870,7 +870,7 @@ document.body.addEventListener('click', async (e) => {
         if(confirmed) {
             try {
                 const res = await authenticatedFetch(`/api/agents/${agentId}`, { method: 'DELETE' });
-                if (res.ok) await fetchAgents();
+                if (res.ok) await refreshDashboardData();
             } catch (err) { console.error('Failed to delete agent'); }
         }
     }
@@ -1400,7 +1400,7 @@ newAgentForm?.addEventListener('submit', async (e) => {
                 if (data?.user) currentUser = data.user;
             }
         }
-        await fetchAgents();
+        await refreshDashboardData();
         closeAgentModal();
     } catch (err) {
         console.error('Error saving agent:', err);
