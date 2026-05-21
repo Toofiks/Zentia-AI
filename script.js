@@ -826,12 +826,29 @@ function selectLead(chatId) {
                 });
                 if (response.ok) {
                     showToast(`AI has been ${willDisable ? 'paused' : 'resumed'}.`, 'success');
+                    
+                    // Optimistic UI Update
+                    if (willDisable) {
+                        btn.textContent = 'Resume AI';
+                        btn.style.background = '#10b981';
+                        btn.style.borderColor = '#10b981';
+                    } else {
+                        btn.textContent = 'Pause AI';
+                        btn.style.background = '#ef4444';
+                        btn.style.borderColor = '#ef4444';
+                    }
+                    
+                    // Update local history so it persists before fetch completes
+                    if (!lead.history) lead.history = [];
+                    lead.history.push({ role: 'system', content: willDisable ? '[AI_DISABLED]' : '[AI_ENABLED]' });
+                    
                     refreshDashboardData(); // Refresh history immediately
                 } else {
                     throw new Error('Failed to toggle AI');
                 }
             } catch (e) {
                 showToast(e.message, 'error');
+                btn.textContent = willDisable ? 'Pause AI' : 'Resume AI'; // revert on error
             }
             btn.disabled = false;
         });
