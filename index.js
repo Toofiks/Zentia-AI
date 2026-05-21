@@ -414,63 +414,52 @@ function startBot(agent) {
                 throw new Error(`AI Service Failed: ${lastError?.message || 'Unknown error'}`);
             }
             
-            const isLead = aiResponse.includes('[LEAD_QUALIFIED]') || 
-                           aiResponse.includes('[MEETING_BOOKED]') ||
-                           aiResponse.toLowerCase().includes('договорились') || 
-                           aiResponse.toLowerCase().includes('успешного обучения') ||
-                           aiResponse.toLowerCase().includes('оплат');
-
-            // Check if already a lead
+            // Check if already a lead (now guaranteed since we create it in early save)
             const { data: existingLeads } = await supabase.from('leads')
-                .select('id, history')
+                .select('id, history, status')
                 .eq('chatId', chatId)
                 .eq('agentId', agent.id)
                 .limit(1);
 
             const isAlreadyLead = existingLeads && existingLeads.length > 0;
-            const currentStatus = isAlreadyLead ? existingLeads[0].status : null;
-            let newStatus = currentStatus || 'Interested';
+            const currentStatus = isAlreadyLead ? existingLeads[0].status : 'Active';
+            let newStatus = currentStatus;
             
             let statusChanged = false;
 
-            if (isLead || isAlreadyLead) {
-                if (aiResponse.includes('[MEETING_BOOKED]')) {
-                    console.log(`[Bot ${agent.id}] Meeting booked!`);
-                    aiResponse = aiResponse.replace('[MEETING_BOOKED]', '').trim();
-                    if (newStatus !== 'Meeting Booked') {
-                        newStatus = 'Meeting Booked';
-                        statusChanged = true;
-                    }
+            if (aiResponse.includes('[MEETING_BOOKED]')) {
+                console.log(`[Bot ${agent.id}] Meeting booked!`);
+                aiResponse = aiResponse.replace('[MEETING_BOOKED]', '').trim();
+                if (newStatus !== 'Meeting Booked') {
+                    newStatus = 'Meeting Booked';
+                    statusChanged = true;
                 }
+            }
 
-                if (aiResponse.includes('[LEAD_QUALIFIED]')) {
-                    console.log(`[Bot ${agent.id}] Lead detected!`);
-                    aiResponse = aiResponse.replace('[LEAD_QUALIFIED]', '').trim();
-                    if (!isAlreadyLead) {
-                        statusChanged = true; // New lead
-                    }
+            if (aiResponse.includes('[LEAD_QUALIFIED]') || 
+                aiResponse.toLowerCase().includes('договорились') || 
+                aiResponse.toLowerCase().includes('успешного обучения') ||
+                aiResponse.toLowerCase().includes('оплат') ||
+                aiResponse.toLowerCase().includes('pay')) {
+                console.log(`[Bot ${agent.id}] Lead qualified!`);
+                aiResponse = aiResponse.replace('[LEAD_QUALIFIED]', '').trim();
+                if (newStatus !== 'Meeting Booked' && newStatus !== 'Qualified') {
+                    newStatus = 'Qualified';
+                    statusChanged = true;
                 }
+            }
 
-                const leadHistory = isAlreadyLead ? [...(existingLeads[0].history || [])] : [...session.history];
-                leadHistory.push({ role: "user", content: userMessage }, { role: "assistant", content: aiResponse });
-
-                const leadData = {
-                    chatId, username, agentId: agent.id, agentName: agent.name,
-                    lastMessage: userMessage,
+            if (isAlreadyLead) {
+                const leadHistory = [...(existingLeads[0].history || []), { role: "assistant", content: aiResponse }];
+                await supabase.from('leads').update({
                     history: leadHistory,
-                    timestamp: new Date().toISOString(),
                     status: newStatus,
-                    user_id: agent.user_id
-                };
+                    timestamp: new Date().toISOString()
+                }).eq('id', existingLeads[0].id);
+            }
 
-                if (isAlreadyLead) {
-                    await supabase.from('leads').update(leadData).eq('id', existingLeads[0].id);
-                } else {
-                    await supabase.from('leads').insert(leadData);
-                }
-
-                // If this is a new lead OR the status upgraded to Meeting Booked, trigger notifications & webhooks
-                if (statusChanged) {
+            // If the status upgraded to Meeting Booked or Qualified, trigger notifications & webhooks
+            if (statusChanged && (newStatus === 'Qualified' || newStatus === 'Meeting Booked')) {
                     // 1. Telegram Notification to Owner
                     let ownerEmail = null;
                     try {
