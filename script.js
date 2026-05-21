@@ -1901,6 +1901,7 @@ function updateAuthUI(user) {
         }
         
         renderAgents(); // Re-render to update limits
+        startDashboardPolling();
     } else {
         // Switch to Landing View
         if (landingPage) landingPage.style.display = 'block';
@@ -1908,6 +1909,8 @@ function updateAuthUI(user) {
         
         if (authGuest) authGuest.style.display = 'flex';
         if (authUser) authUser.style.display = 'none';
+        
+        stopDashboardPolling();
     }
 }
 
