@@ -1935,9 +1935,9 @@ p {
     font-size: 2.6rem !important; 
     line-height: 1.1; 
     margin-bottom: 1.5rem !important;
-    background: linear-gradient(135deg, #fff 30%, #a78bfa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--fg-main) !important;
+    background: none !important;
+    -webkit-text-fill-color: var(--fg-main) !important;
   }
   .hero-desc { 
     font-size: 1.1rem; 
