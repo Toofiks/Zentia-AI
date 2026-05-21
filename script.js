@@ -367,7 +367,7 @@ function renderAgents() {
 
                     <div class="agent-metrics">
                         <div><span style="font-weight: 700;">${agent.tokensUsed || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Tokens</span></div>
-                        <div><span style="font-weight: 700;">${agent.uniqueUsers?.length || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Users</span></div>
+                        <div><span style="font-weight: 700;">${agent.uniqueUsers || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Users</span></div>
                         <div><span style="font-weight: 700;">${agent.messagesSent || 0}</span><br><span style="font-size: 0.75rem; color: var(--fg-light);">Messages</span></div>
                     </div>
                     <div style="display: ${isOwner ? 'flex' : 'none'}; gap: 0.5rem; margin-top: 1.5rem;">
