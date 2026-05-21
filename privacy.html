@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | Zentia AI</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: var(--bg-base); color: var(--fg-main); line-height: 1.6; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--bg-main); padding: 3rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+        h1 { margin-bottom: 2rem; }
+        h2 { margin-top: 2rem; margin-bottom: 1rem; color: var(--fg-main); }
+        p { margin-bottom: 1rem; color: var(--fg-muted); }
+        .back-link { display: inline-block; margin-bottom: 2rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Zentia</a>
+        <h1>Privacy Policy</h1>
+        <p>Effective Date: May 20, 2026</p>
+
+        <h2>1. Introduction</h2>
+        <p>At Zentia AI, we respect your privacy and are committed to protecting your personal data. This policy explains how we handle information when you use our platform.</p>
+
+        <h2>2. Data We Collect</h2>
+        <p>We collect minimal data necessary to provide our service:</p>
+        <ul>
+            <li>Email address and basic profile info via Supabase Auth.</li>
+            <li>Telegram Bot tokens provided by you to run your agents.</li>
+            <li>Messages processed by your bots (stored securely for your inbox).</li>
+            <li>Custom API keys (stored encrypted in your user metadata).</li>
+        </ul>
+
+        <h2>3. How We Use Data</h2>
+        <p>Your data is used strictly for:</p>
+        <ul>
+            <li>Authenticating your access to the dashboard.</li>
+            <li>Operating your AI agents on Telegram.</li>
+            <li>Generating analytics for your account.</li>
+            <li>Processing subscription payments via Stripe.</li>
+        </ul>
+
+        <h2>4. Data Sharing</h2>
+        <p>We do not sell your data. Data is shared only with necessary service providers:</p>
+        <ul>
+            <li><b>Supabase:</b> Database and Authentication.</li>
+            <li><b>Stripe:</b> Payment processing.</li>
+            <li><b>OpenRouter/Google:</b> To process AI requests (only the content of messages is sent).</li>
+        </ul>
+
+        <h2>5. Security</h2>
+        <p>We use industry-standard encryption for your API keys and secure protocols for all communication. Your Telegram tokens are used only to interface with the Telegram API.</p>
+
+        <h2>6. Your Rights</h2>
+        <p>You can delete your account and all associated agents at any time through the dashboard. This will purge your data from our active systems.</p>
+
+        <h2>7. Contact</h2>
+        <p>If you have questions, please contact us at privacy@zentia-ai.com.</p>
+    </div>
+</body>
+</html>

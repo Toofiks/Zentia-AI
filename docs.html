@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation | Zentia AI</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: var(--bg-base); color: var(--fg-main); line-height: 1.6; padding: 2rem; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--bg-main); padding: 3rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+        h1 { margin-bottom: 2rem; }
+        h2 { margin-top: 2rem; margin-bottom: 1rem; color: var(--fg-main); border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem; }
+        h3 { margin-top: 1.5rem; color: var(--fg-main); }
+        p { margin-bottom: 1rem; color: var(--fg-muted); }
+        code { background: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        pre { background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); overflow-x: auto; margin-bottom: 1rem; }
+        .back-link { display: inline-block; margin-bottom: 2rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Zentia</a>
+        <h1>Zentia AI Documentation</h1>
+
+        <h2>1. Getting Started</h2>
+        <p>Zentia AI allows you to deploy autonomous sales agents on Telegram. To get started, you need a Telegram Bot Token and an AI API Key.</p>
+
+        <h3>Step 1: Get a Telegram Bot Token</h3>
+        <p>1. Open <a href="https://t.me/BotFather" target="_blank">@BotFather</a> in Telegram.</p>
+        <p>2. Send <code>/newbot</code> and follow the instructions.</p>
+        <p>3. Copy the HTTP API token provided.</p>
+
+        <h3>Step 2: Setup API Keys</h3>
+        <p>Go to the <b>Settings</b> section in your Zentia Dashboard and provide either an OpenRouter API key or a Gemini API key. This key will be used to generate AI responses.</p>
+
+        <h2>2. Agent Configuration</h2>
+        <p>When creating an agent, you can configure the following:</p>
+        <ul>
+            <li><b>Name:</b> The display name of your agent in the dashboard.</li>
+            <li><b>Bot Token:</b> The token from @BotFather.</li>
+            <li><b>Model:</b> Choose between various Gemini models (Flash for speed, Pro for reasoning).</li>
+            <li><b>System Prompt:</b> Define the agent's goal, target audience, tone, and rules.</li>
+        </ul>
+
+        <h2>3. Knowledge Base</h2>
+        <p>You can upload PDF or text files to your agent's knowledge base. The agent will use this information to provide accurate answers about your specific product or service.</p>
+
+        <h2>4. Analytics</h2>
+        <p>The analytics tab shows token usage, unique user counts, and estimated costs. You can filter by agent or by model.</p>
+
+        <h2>5. Inbox & Lead Management</h2>
+        <p>All interactions are captured in the <b>Inbox</b>. You can view full transcripts, update lead status (Interested, Qualified, etc.), and manually intervene in conversations if necessary.</p>
+
+        <h2>6. API Integrations</h2>
+        <p>Zentia supports Webhooks and Google Sheets. You can configure a webhook URL to receive lead data in real-time or sync leads to a Google Sheet automatically.</p>
+    </div>
+</body>
+</html>

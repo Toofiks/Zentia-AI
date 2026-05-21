@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zentia AI Bot | Minimalist Outreach</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Interactive Background Elements -->
+    <div class="interactive-bg"></div>
+    <div class="blob-1"></div>
+    <div class="blob-2"></div>
+    <div class="cursor-glow"></div>
+    <div class="stars-container"></div>
+
+    <!-- Landing Page Wrapper -->
+    <div id="landing-page">
+        <nav class="nav">
+            <div class="container nav-content">
+                <a href="#" class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+                        <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path>
+                    </svg>
+                    Zentia AI
+                </a>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#workflow">Workflow</a>
+                    <a href="#testimonials">Customers</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#faq">FAQ</a>
+                </div>
+                <div class="auth-guest" style="display: flex; gap: 1rem; align-items: center;">
+                    <a href="#" id="open-login" style="font-size: 0.875rem; font-weight: 600; color: var(--fg-muted);">Log in</a>
+                    <a href="#" id="open-register" class="btn btn-primary">Get Started</a>
+                </div>
+                <div class="auth-user" style="display: none; gap: 1.5rem; align-items: center;">
+                    <span id="user-email" style="font-size: 0.875rem; font-weight: 600; color: var(--fg-main);"></span>
+                    <a href="#" id="handle-logout" style="font-size: 0.875rem; font-weight: 600; color: var(--fg-muted);">Log out</a>
+                </div>
+            </div>
+        </nav>
+
+        <header class="hero container">
+            <div class="badge reveal">
+                <span class="cemoji">
+                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                </span>
+                Intelligent Sales Outreach
+            </div>
+            <h1 class="hero-title reveal">More meetings.<br>Zero manual effort.</h1>
+            <p class="hero-desc reveal">Zentia AI handles the entire top-of-funnel process. From lead qualification to booking meetings, autonomously and elegantly. 
+                <span class="cemoji">
+                    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </span>
+            </p>
+            
+            <div class="hero-actions reveal">
+                <a href="#" id="hero-start-btn" class="btn btn-primary">Start for free</a>
+                <a href="#" id="open-demo-video" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Watch Demo
+                </a>
+            </div>
+
+            <div class="hero-mockup reveal">
+                <div class="mockup-inner" style="display: grid; grid-template-columns: 240px 1fr; height: 500px;">
+                    <!-- Mockup Sidebar -->
+                    <div style="background: var(--bg-main); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column;">
+                        <div style="padding: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--fg-main); border-bottom: 1px solid var(--border-subtle);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg>
+                            Zentia AI
+                        </div>
+                        <div style="padding: 1rem 0.5rem; flex-grow: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                            <div style="padding: 0.6rem 1rem; color: var(--fg-muted); font-size: 0.875rem; display: flex; align-items: center; gap: 0.75rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</div>
+                            <div style="padding: 0.6rem 1rem; color: var(--fg-muted); font-size: 0.875rem; display: flex; align-items: center; gap: 0.75rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg> AI Agents</div>
+                            <div style="padding: 0.6rem 1rem; background: var(--bg-secondary); border-radius: var(--radius-sm); color: var(--fg-main); font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.75rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Live Inbox</div>
+                            <div style="padding: 0.6rem 1rem; color: var(--fg-muted); font-size: 0.875rem; display: flex; align-items: center; gap: 0.75rem;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> Analytics</div>
+                        </div>
+                    </div>
+                    <!-- Mockup Main Area -->
+                    <div style="display: flex; flex-direction: column; background: var(--bg-secondary);">
+                        <div class="mockup-header" style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-main);">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div style="font-weight: 600; color: var(--fg-main);">Sarah Jenkins</div>
+                                <span class="status-badge success">Qualified Lead</span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div class="mockup-dot"></div>
+                                <div class="mockup-dot"></div>
+                                <div class="mockup-dot"></div>
+                            </div>
+                        </div>
+                        <div class="mockup-body" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; padding: 2rem;">
+                            <div class="chat-bubble bot">
+                                <span class="cemoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg></span>
+                                Hi Sarah, noticed you're scaling the sales team at TechCorp. How are you handling inbound lead qualification right now?
+                            </div>
+                            <div class="chat-bubble user">Hey! Right now it's totally manual, takes too much time.</div>
+                            <div class="chat-bubble bot">
+                                <span class="cemoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg></span>
+                                I can help! I automate the entire top-of-funnel, qualifying leads and booking meetings directly to your calendar. Want a quick 5-min demo?
+                            </div>
+                            <div class="chat-bubble user">Sure, book me for tomorrow at 2 PM.</div>
+                            <div class="chat-bubble action">
+                                <span class="cemoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                                Event synced to HubSpot & Meeting booked for tomorrow at 2:00 PM.
+                            </div>
+                        </div>
+                        <div style="padding: 1rem 1.5rem; background: var(--bg-main); border-top: 1px solid var(--border-subtle); display: flex; gap: 0.5rem;">
+                            <div style="flex-grow: 1; padding: 0.75rem 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--fg-muted); font-size: 0.875rem;">AI is handling this conversation...</div>
+                            <div style="padding: 0.75rem 1.5rem; background: var(--fg-main); color: var(--bg-main); border-radius: var(--radius-sm); font-weight: 600; font-size: 0.875rem;">Take Over</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Logo Cloud -->
+        <section class="logo-cloud-section container reveal">
+            <h3 class="logo-cloud-title">Trusted by innovative forward-thinking teams</h3>
+            <div class="logo-cloud">
+                <!-- Minimalist placeholder SVGs for logos -->
+                <svg viewBox="0 0 100 30"><path d="M10 15a5 5 0 100-10 5 5 0 000 10zm15-10v10M35 15v-5a5 5 0 1010 0v5M55 15v-10l10 5-10 5zM80 5v10m-5-5h10M100 5v10l-5-5 5-5z" stroke="currentColor" stroke-width="3" fill="none"/></svg>
+                <svg viewBox="0 0 100 30"><circle cx="15" cy="15" r="10" stroke="currentColor" stroke-width="3" fill="none"/><rect x="40" y="5" width="20" height="20" stroke="currentColor" stroke-width="3" fill="none"/><polygon points="85,5 95,25 75,25" stroke="currentColor" stroke-width="3" fill="none"/></svg>
+                <svg viewBox="0 0 100 30"><path d="M10 25L20 5l10 20M45 25V5M60 5h15v20H60zM90 5v20M85 15h10" stroke="currentColor" stroke-width="3" fill="none"/></svg>
+                <svg viewBox="0 0 100 30"><path d="M10 15q10-15 20 0t20 0q10-15 20 0t20 0" stroke="currentColor" stroke-width="3" fill="none"/></svg>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="section container">
+            <div class="section-header reveal">
+                <h2>Outbound sales, quantified.</h2>
+                <p>Our customers see immediate impact on their pipeline velocity.</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card reveal">
+                    <div class="stat-value">3x</div>
+                    <div class="stat-label">More meetings booked</div>
+                </div>
+                <div class="stat-card reveal" style="transition-delay: 0.1s;">
+                    <div class="stat-value">80%</div>
+                    <div class="stat-label">Time saved on research</div>
+                </div>
+                <div class="stat-card reveal" style="transition-delay: 0.2s;">
+                    <div class="stat-value">24/7</div>
+                    <div class="stat-label">Continuous operation</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section container">
+            <div class="section-header reveal">
+                <h2>Supercharge your pipeline</h2>
+                <p>Everything you need to scale your outbound efforts organically.</p>
+            </div>
+            
+            <div class="bento-grid">
+                <div class="bento-card bento-1 reveal">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    </div>
+                    <h3 class="feature-title">
+                        Autonomous Telegram Bots
+                    </h3>
+                    <p class="feature-desc">Deploy and manage multiple AI-driven Telegram bots simultaneously. Each bot maintains its own persona and qualifies leads automatically.</p>
+                </div>
+                
+                <div class="bento-card bento-2 reveal" style="transition-delay: 0.1s;">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <h3 class="feature-title">
+                        RAG Knowledge Base
+                    </h3>
+                    <p class="feature-desc">Upload PDF or TXT files to instantly train your agents. The AI handles complex objections using your specific product documentation.</p>
+                </div>
+                
+                <div class="bento-card bento-3 reveal" style="transition-delay: 0.2s;">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01"></path><path d="M17 12h.01"></path><path d="M7 12h.01"></path></svg>
+                    </div>
+                    <h3 class="feature-title">
+                        CRM & Webhooks
+                    </h3>
+                    <p class="feature-desc">Native 2-way sync via Webhooks to Zapier, Make.com, Salesforce, and HubSpot. Lead data flows seamlessly when a meeting is booked.</p>
+                </div>
+
+                <div class="bento-card bento-4 reveal" style="transition-delay: 0.3s;">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    </div>
+                    <h3 class="feature-title">
+                        Live Inbox
+                    </h3>
+                    <p class="feature-desc">Monitor AI conversations in real-time, manually change lead statuses, or jump in to take over the chat at any moment.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="workflow" class="section container" style="background-color: var(--bg-secondary); border-radius: var(--radius-lg); padding: 6rem 3rem;">
+            <div class="section-header reveal">
+                <h2>How it works</h2>
+                <p>A seamless process from connection to booked meeting.</p>
+            </div>
+            
+            <div class="workflow-list">
+                <div class="workflow-item reveal">
+                    <div class="workflow-num">1</div>
+                    <div class="workflow-content">
+                        <h3>
+                            <span class="cemoji"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>
+                            Link your Telegram Bot
+                        </h3>
+                        <p>Get a token from BotFather and paste it into Zentia. Upload your company's PDFs to train the AI instantly.</p>
+                    </div>
+                </div>
+                <div class="workflow-item reveal">
+                    <div class="workflow-num">2</div>
+                    <div class="workflow-content">
+                        <h3>
+                            <span class="cemoji"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></span>
+                            Define AI Behavior
+                        </h3>
+                        <p>Set your goal, audience, and tone. Our prompt expansion tool writes the perfect system prompt for you.</p>
+                    </div>
+                </div>
+                <div class="workflow-item reveal">
+                    <div class="workflow-num">3</div>
+                    <div class="workflow-content">
+                        <h3>
+                            <span class="cemoji"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg></span>
+                            Watch meetings roll in
+                        </h3>
+                        <p>The bot engages users, answers questions, handles objections, provides your Calendly link, and sends data to your CRM.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section id="testimonials" class="section container">
+            <div class="section-header reveal">
+                <h2>Loved by sales teams</h2>
+                <p>Don't just take our word for it.</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card reveal">
+                    <p class="testimonial-quote">"Zentia booked 15 meetings for our real estate agency in one week. We fired our outsourced lead gen agency and replaced them with two AI agents. Our pipeline grew by 300%."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background-image: url('https://i.pravatar.cc/100?img=1'); background-size: cover;"></div>
+                        <div class="testimonial-info">
+                            <h4>James T.</h4>
+                            <p>VP of Sales, RealEstatePro</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal" style="transition-delay: 0.1s;">
+                    <p class="testimonial-quote">"The level of personalization is insane. Clients regularly praise 'my' preparation for the call. They don't even realize they were chatting with a bot on Telegram."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background-image: url('https://i.pravatar.cc/100?img=9'); background-size: cover;"></div>
+                        <div class="testimonial-info">
+                            <h4>Sarah K.</h4>
+                            <p>Founder, Elevate Agency</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card reveal" style="transition-delay: 0.2s;">
+                    <p class="testimonial-quote">"Setup took exactly 10 minutes. Within 48 hours, our agent had already closed 4 meetings with Enterprise clients. It's literal magic, leads are qualified 24/7."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar" style="background-image: url('https://i.pravatar.cc/100?img=33'); background-size: cover;"></div>
+                        <div class="testimonial-info">
+                            <h4>Marcus R.</h4>
+                            <p>Growth Lead, DataSync</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="section container">
+            <div class="section-header reveal">
+                <h2>Simple, transparent pricing</h2>
+                <p>Choose the plan that fits your growth stage. No hidden fees.</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card reveal">
+                    <h3 class="pricing-name">
+                        Starter
+                    </h3>
+                    <div class="pricing-price">$49<span>/mo</span></div>
+                    <ul class="pricing-features">
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></span> Up to 3 Active AI Agents</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span> Telegram Bot Integration</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></span> Basic Prompt Customization</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary w-full plan-select-btn" data-plan="starter">Get Started</a>
+                </div>
+
+                <div class="pricing-card premium reveal" style="transition-delay: 0.1s;">
+                    <div class="pricing-badge">Most Popular</div>
+                    <h3 class="pricing-name" style="color: var(--fg-main);">
+                        Pro
+                    </h3>
+                    <div class="pricing-price">$149<span>/mo</span></div>
+                    <ul class="pricing-features">
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 17 22 12"/></svg></span> Up to 10 Active AI Agents</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></span> Custom OpenRouter Key</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span> Webhook & G-Sheets Sync</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="4" height="9" x="3" y="11" rx="1"/><rect width="4" height="17" x="10" y="3" rx="1"/><rect width="4" height="5" x="17" y="15" rx="1"/></svg></span> Priority Support & Analytics</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary w-full upgrade-btn">Upgrade to Pro</a>
+                </div>
+
+                <div class="pricing-card reveal" style="transition-delay: 0.2s;">
+                    <h3 class="pricing-name">
+                        Enterprise
+                    </h3>
+                    <div class="pricing-price">Custom</div>
+                    <ul class="pricing-features">
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z"/></svg></span> Unlimited AI Agents</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span> White-label (No Branding)</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg></span> Dedicated Success Manager</li>
+                        <li><span class="pricing-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="14" y="3" rx="1"/><path d="M10 21V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H3"/></svg></span> Custom Integrations</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary w-full plan-select-btn" data-plan="enterprise">Contact Sales</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="section container">
+            <div class="section-header reveal">
+                <h2>Frequently asked questions</h2>
+                <p>Everything you need to know about the product and billing.</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item reveal">
+                    <div class="faq-question">
+                        Is there a free trial available?
+                        <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, you can try Zentia AI for free for 14 days. No credit card required. You get full access to all Pro features to test the platform.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal" style="transition-delay: 0.1s;">
+                    <div class="faq-question">
+                        Can I change my plan later?
+                        <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Of course. You can upgrade, downgrade, or cancel your subscription at any time from your account settings.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal" style="transition-delay: 0.2s;">
+                    <div class="faq-question">
+                        Do you integrate with HubSpot?
+                        <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, we offer a native two-way integration with HubSpot, Salesforce, and Pipedrive. Leads are automatically synced and updated.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer container">
+            <div class="footer-content">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+                        <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path>
+                    </svg>
+                    Zentia AI
+                </div>
+                <div class="footer-links">
+                    <a href="privacy.html">Privacy</a>
+                    <a href="terms.html">Terms</a>
+                    <a href="docs.html">Docs</a>
+                    <a href="#">Twitter</a>
+                    <a href="#">LinkedIn</a>
+                </div>
+                <div style="color: var(--fg-muted); font-size: 0.875rem;">
+                    © 2026 Zentia AI Inc.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Workspace Dashboard (Hidden by default) -->
+    <div id="workspace-dashboard" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path>
+                </svg>
+                Zentia AI
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-view-btn active" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</a>
+                <a href="#" class="nav-view-btn" data-view="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> AI Agents</a>
+                <a href="#" class="nav-view-btn" data-view="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> Analytics</a>
+                <a href="#" class="nav-view-btn" data-view="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Users</a>
+                <a href="#" class="nav-view-btn" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Inbox</a>
+                <a href="#" class="nav-view-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Settings</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-header">
+                <div class="mobile-logo-bar" style="display: none;">
+                    <div class="logo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path>
+                        </svg>
+                        <span>Zentia AI</span>
+                    </div>
+                    <div class="mobile-menu-wrapper" style="margin-left: auto; position: relative;">
+                        <button id="mobile-quick-menu-btn" class="btn btn-secondary" style="padding: 0.5rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                            Menu
+                        </button>
+                        <div id="mobile-quick-dropdown" class="quick-dropdown">
+                            <a href="#" class="dropdown-item" data-view="dashboard">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                Dashboard
+                            </a>
+                            <a href="#" class="dropdown-item" data-view="agents">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                AI Agents
+                            </a>
+                            <a href="#" class="dropdown-item" data-view="inbox">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Live Inbox
+                            </a>
+                            <a href="#" class="dropdown-item" data-view="analytics">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                                Analytics
+                            </a>
+                            <a href="#" class="dropdown-item" data-view="users">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                                User Logs
+                            </a>
+                            <div style="height: 1px; background: var(--border-subtle); margin: 0.5rem 0;"></div>
+                            <a href="#" class="dropdown-item" data-view="settings">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="welcome-text">
+                    <h1 id="view-title">Workspace</h1>
+                    <p id="view-subtitle">Good morning, <span class="user-display-name">User</span> <span id="user-plan-badge" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">Free Plan</span></p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="open-new-agent">+ New Agent</button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="dashboard-view active">
+                
+                <div id="dashboard-pro-banner" class="pro-banner">
+                    <div class="pro-banner-content">
+                        <h3>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                            Unlock Zentia Pro
+                        </h3>
+                        <p>Deploy up to 10 agents, get priority support and advanced CRM sync.</p>
+                    </div>
+                    <button class="btn btn-primary upgrade-btn">Upgrade for $149/mo</button>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="dash-card" style="grid-column: span 2;">
+                        <h3>Token Usage Overview</h3>
+                        <div class="stat-group">
+                            <div class="stat">
+                                <span class="label">Total Tokens</span>
+                                <span class="value" id="dash-total-tokens">0</span>
+                                <span class="trend positive">Live</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Unique Users</span>
+                                <span class="value" id="dash-unique-users">0</span>
+                                <span class="trend positive">Total</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Qualified Leads</span>
+                                <span class="value" id="dash-total-leads">0</span>
+                                <span class="trend success">Sales</span>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Active Agents</span>
+                                <span class="value" id="dash-active-agents">0</span>
+                                <span class="trend">Running</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dash-card full-width">
+                        <h3>Active Agents</h3>
+                        <div id="active-agents-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Agents View -->
+            <div id="view-agents" class="dashboard-view">
+                <div class="agents-grid" id="agents-grid-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Users View -->
+            <div id="view-users" class="dashboard-view">
+                <div class="dash-card full-width">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+                        <div>
+                            <h3 style="margin-bottom: 0.25rem;">All Users Interaction Log</h3>
+                            <span style="font-size: 0.75rem; color: var(--fg-muted);">Live updates from all active bots</span>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <select id="user-filter-agent" style="padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.875rem; color: var(--fg-main); cursor: pointer;">
+                                <option value="all">All Agents</option>
+                            </select>
+                            <select id="user-filter-date" style="padding: 0.5rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.875rem; color: var(--fg-main); cursor: pointer;">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="week">Last 7 Days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Chat ID</th>
+                                    <th>Agent Name</th>
+                                    <th>Last Activity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Populated by JS -->
+                                <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--fg-muted);">No users recorded yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics View -->
+            <div id="view-analytics" class="dashboard-view">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <h2 style="font-size: 1.5rem; margin: 0;">Analytics Overview</h2>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="analytics-agent-filter" style="padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-secondary); color: var(--fg-main); font-weight: 500; outline: none; cursor: pointer;">
+                            <option value="all">All Agents</option>
+                        </select>
+                        <select id="analytics-model-filter" style="padding: 0.5rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-secondary); color: var(--fg-main); font-weight: 500; outline: none; cursor: pointer;">
+                            <option value="all">All Models</option>
+                            <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="dash-card">
+                        <h3>Tokens Processed</h3>
+                        <div class="stat-value" id="analytics-total-tokens">0</div>
+                        <span class="trend positive">+12% vs last week</span>
+                    </div>
+                    <div class="dash-card" style="position: relative; cursor: pointer;" id="cost-card-toggle">
+                        <h3>Estimated Cost <span style="font-size: 0.75rem; color: var(--fg-light); font-weight: normal; margin-left: 0.5rem;">(Click for breakdown)</span></h3>
+                        <div class="stat-value" id="analytics-total-cost">$0.00</div>
+                        <span class="trend" id="cost-model-name">Across all models</span>
+                        <div id="cost-breakdown-panel" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; box-shadow: var(--shadow-lg); z-index: 10; margin-top: 0.5rem;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <div class="dash-card">
+                        <h3>Total Messages Sent</h3>
+                        <div class="stat-value" id="analytics-total-msgs">0</div>
+                        <span class="trend">Across selected agents</span>
+                    </div>
+                    <div class="dash-card">
+                        <h3>Qualified Leads</h3>
+                        <div class="stat-value" id="analytics-total-leads">0</div>
+                        <span class="trend" id="analytics-conversion-rate">0% conversion rate</span>
+                    </div>
+                    <div class="dash-card full-width" style="height: 400px; position: relative;">
+                        <h3>Usage over time</h3>
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                    <div id="analytics-agent-info" class="dash-card full-width" style="display: none; padding: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--border-subtle); margin-top: -1rem; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                            <div>
+                                <h4 style="font-size: 0.75rem; color: var(--fg-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Google Sheets Sync</h4>
+                                <div id="info-gsheets" style="font-size: 0.875rem; color: var(--fg-main); word-break: break-all;">Not configured</div>
+                            </div>
+                            <div>
+                                <h4 style="font-size: 0.75rem; color: var(--fg-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Webhook Endpoint</h4>
+                                <div id="info-webhook" style="font-size: 0.875rem; color: var(--fg-main); word-break: break-all;">Not configured</div>
+                            </div>
+                            <div>
+                                <h4 style="font-size: 0.75rem; color: var(--fg-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">White-label Status</h4>
+                                <div id="info-branding" style="font-size: 0.875rem; color: var(--fg-main);">Branding Active</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dash-card full-width">
+                        <h3>Recent User Inquiries</h3>
+                        <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 1rem;">The most recent questions and messages sent to your agents.</p>
+                        <div id="analytics-recent-inquiries" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div style="text-align: center; color: var(--fg-muted); padding: 1rem;">No inquiries yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inbox View -->
+            <div id="view-inbox" class="dashboard-view">
+                <div class="inbox-container">
+                    <div class="inbox-sidebar" id="inbox-leads-list">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="inbox-main">
+                        <div class="inbox-header">
+                            <button id="inbox-back-btn" class="btn btn-secondary" style="display: none; padding: 0.4rem; border-radius: 50%; width: 36px; height: 36px; min-width: 36px; justify-content: center; align-items: center; margin-right: 0.75rem;">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            <h3 id="inbox-chat-title" style="flex-grow: 1;">Select a lead</h3>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; margin-right: 1rem;">
+                                <button id="export-chat-txt-btn" class="btn btn-secondary" style="display: none; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--border-subtle);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download TXT</button>
+                                <button id="export-csv-btn" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.8rem;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export CSV</button>
+                            </div>
+                            <span class="status-badge success" id="inbox-chat-status" style="display: none;">Interested</span>
+                        </div>
+                        <div class="inbox-chat" id="inbox-chat-history">
+                            <div style="text-align: center; color: var(--fg-muted); margin-top: 2rem;">Select a qualified lead from the sidebar to view the conversation.</div>
+                        </div>
+                        <div class="inbox-input">
+                            <input type="text" placeholder="AI is handling this conversation. Type to intervene...">
+                            <button class="btn btn-primary" style="padding: 0.5rem 1rem;">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="view-settings" class="dashboard-view">
+                <div class="settings-grid">
+                    <div class="dash-card">
+                        <h3 style="margin-bottom: 0.5rem;">Profile Settings</h3>
+                        <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 2rem;">Manage your personal information.</p>
+                        <form class="auth-form" id="settings-form">
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" id="settings-email" readonly style="opacity: 0.7;">
+                            </div>
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="settings-name" placeholder="John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label>Telegram Chat ID for Lead Notifications</label>
+                                <input type="text" id="settings-telegram-chat-id" placeholder="e.g. 123456789">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: max-content; margin-top: 1rem;">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <div class="dash-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                            <div>
+                                <h3 style="margin-bottom: 0.5rem;">Billing & Plan</h3>
+                                <p style="color: var(--fg-muted); font-size: 0.875rem;">Manage your subscription and limits.</p>
+                            </div>
+                            <div id="settings-plan-badge" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6; padding: 4px 12px; border-radius: 12px; font-size: 0.875rem; font-weight: 700;">Free Plan</div>
+                        </div>
+
+                        <div style="background: var(--bg-main); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.5rem; margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600; font-size: 0.95rem;">Active Agents Limit</span>
+                                <span id="settings-agent-limit" style="font-weight: 700; color: var(--fg-main);">1 / 1</span>
+                            </div>
+                            <div style="width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+                                <div id="settings-agent-progress" style="width: 100%; height: 100%; background: #8b5cf6; border-radius: 4px;"></div>
+                            </div>
+                            <p style="color: var(--fg-light); font-size: 0.75rem; margin-top: 0.75rem;">Upgrade to Pro to deploy up to 10 AI agents simultaneously.</p>
+                        </div>
+
+                        <button id="settings-upgrade-btn" class="btn btn-primary w-full upgrade-btn" style="padding: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path></svg>
+                            Upgrade to Pro
+                        </button>
+                    </div>
+
+                    <div class="dash-card">
+                        <h3 style="margin-bottom: 0.5rem;">Account Actions</h3>
+                        <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Manage your session and security.</p>
+                        <button id="mobile-logout-btn" class="btn btn-secondary w-full" style="color: #ef4444; border-color: #ef4444; padding: 0.75rem; font-weight: 700;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 8px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                            Log out from Zentia
+                        </button>
+                    </div>
+                    
+                    <div class="dash-card">
+                        <h3 style="margin-bottom: 0.5rem;">Custom API Keys</h3>
+                        <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 2rem;">Bring your own API keys to bypass global rate limits.</p>
+                        <form class="auth-form" id="settings-api-form">
+                            <div class="form-group">
+                                <label>OpenRouter API Key (Optional)</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="password" id="settings-openrouter-key" placeholder="sk-or-v1-..." style="flex-grow: 1;">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label>Gemini API Key (Optional)</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="password" id="settings-gemini-key" placeholder="AIza..." style="flex-grow: 1;">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-secondary" style="margin-top: 1rem; width: 100%;">Save API Keys</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New/Edit Agent Modal -->
+    <div id="new-agent-modal" class="modal">
+        <div class="modal-backdrop" id="new-agent-backdrop"></div>
+        <div class="modal-content" style="max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 2.5rem;">
+            <button class="modal-close" id="close-agent-modal" style="top: 1.5rem; right: 1.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            
+            <h2 id="agent-modal-title" style="margin-bottom: 0.5rem; font-size: 1.5rem;">Create AI Agent</h2>
+            <p style="margin-bottom: 2.5rem; font-size: 0.95rem; color: var(--fg-muted);">Configure a new autonomous agent by providing core parameters.</p>
+            
+            <form id="new-agent-form" class="auth-form">
+                <input type="hidden" id="agent-id">
+                
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label>Agent Name</label>
+                        <input type="text" id="agent-name" placeholder="e.g. Sales Outreach Bot" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>AI Model</label>
+                        <input type="hidden" id="agent-model" value="gemini-2.5-flash">
+                        <div class="model-selector-grid">
+                            <div class="model-card active" data-model="gemini-2.5-flash">
+                                <div class="model-icon flash">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                                </div>
+                                <div class="model-info">
+                                    <h4>Gemini 2.5 Flash</h4>
+                                    <p class="model-cost">$0.075 / 1M tokens</p>
+                                    <p class="model-desc">Blazing fast & cheap. Best for simple FAQ, qualification, and high-volume outreach.</p>
+                                </div>
+                            </div>
+                            <div class="model-card" data-model="gemini-2.5-pro">
+                                <div class="model-icon pro">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                                </div>
+                                <div class="model-info">
+                                    <h4>Gemini 2.5 Pro</h4>
+                                    <p class="model-cost">$3.50 / 1M tokens</p>
+                                    <p class="model-desc">High reasoning & memory. Best for complex B2B sales and handling tough objections.</p>
+                                </div>
+                            </div>
+                            <div class="model-card" data-model="gemini-3-flash-preview">
+                                <div class="model-icon flash">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                                </div>
+                                <div class="model-info">
+                                    <h4>Gemini 3.0 Flash <span style="font-size: 0.65rem; background: var(--bg-secondary); padding: 2px 4px; border-radius: 4px;">Preview</span></h4>
+                                    <p class="model-cost">$0.10 / 1M tokens</p>
+                                    <p class="model-desc">Next-gen speed model. Extremely fast generation for real-time interactions.</p>
+                                </div>
+                            </div>
+                            <div class="model-card" data-model="gemini-3.1-pro-preview">
+                                <div class="model-icon pro">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                                </div>
+                                <div class="model-info">
+                                    <h4>Gemini 3.1 Pro <span style="font-size: 0.65rem; background: var(--bg-secondary); padding: 2px 4px; border-radius: 4px;">Preview</span></h4>
+                                    <p class="model-cost">$3.50 / 1M tokens</p>
+                                    <p class="model-desc">State-of-the-art reasoning. The most capable model for sophisticated negotiations.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>Telegram Bot Token</label>
+                    <input type="text" id="agent-token" placeholder="1234567890:AAH_XXXXXXXXXXXX" required>
+                    <span style="font-size: 0.75rem; color: var(--fg-light);">From @BotFather on Telegram</span>
+                </div>
+                
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>Payment Information (Optional)</label>
+                    <input type="text" id="agent-payment" placeholder="e.g. Crypto wallet address or payment link">
+                    <span style="font-size: 0.75rem; color: var(--fg-light);">The bot will offer this exactly when a lead asks how to pay.</span>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>Calendar/Booking Link (Optional)</label>
+                    <input type="url" id="agent-calendar" placeholder="https://calendly.com/your-link">
+                    <span style="font-size: 0.75rem; color: var(--fg-light);">The bot will provide this link exactly when the user agrees to a meeting.</span>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>Webhook URL (Optional)</label>
+                    <input type="url" id="agent-webhook" placeholder="https://your-crm.com/webhook">
+                    <span style="font-size: 0.75rem; color: var(--fg-light);">We will POST a JSON payload here when a lead is qualified.</span>
+                </div>
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>Google Sheets Webhook (Optional)</label>
+                    <input type="url" id="agent-gsheets" placeholder="https://script.google.com/macros/s/.../exec">
+                    <span style="font-size: 0.75rem; color: var(--fg-light);">Automatically add a new row to your Google Sheet when a lead is captured.</span>
+                </div>
+                
+                <div id="enterprise-features" style="display: none; margin-top: 1.5rem; padding: 1rem; border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.05); border-radius: var(--radius-sm);">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; font-weight: 600; cursor: pointer;">
+                        <input type="checkbox" id="agent-whitelabel" style="width: auto;">
+                        Remove Zentia Branding (White-label)
+                    </label>
+                    <span style="font-size: 0.75rem; color: var(--fg-light); display: block; margin-top: 0.25rem;">Enterprise feature: Hides the 'AI is handling this' watermark from the interface.</span>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 2rem 0;">
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div style="padding: 0; color: var(--fg-main);">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; margin: 0; font-weight: 800;">Agent Behavior Wizard</h3>
+                            <span style="font-size: 0.8rem; color: var(--fg-muted); font-weight: 600;">Fill this to let AI generate your strict rules.</span>
+                        </div>
+                    </div>
+                    <div>
+                        <select id="wizard-template" style="padding: 0.4rem 0.8rem; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+                            <option value="">Load a Template...</option>
+                            <option value="saas">SaaS Sales SDR</option>
+                            <option value="realestate">Real Estate Agent</option>
+                            <option value="fitness">Fitness Coach / Closer</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>1. Primary Goal</label>
+                    <input type="text" id="wizard-goal" placeholder="e.g. Qualify leads and close sales" required>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label>2. Target Audience</label>
+                        <input type="text" id="wizard-audience" placeholder="e.g. Real estate buyers" required>
+                    </div>
+                    <div class="form-group">
+                        <label>3. Tone of Voice</label>
+                        <input type="text" id="wizard-tone" placeholder="e.g. Professional, friendly" required>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>4. Strict Rules (Optional)</label>
+                    <textarea id="wizard-rules" rows="2" placeholder="e.g. Never offer discounts. Always confirm email." style="padding: 0.75rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.95rem; color: var(--fg-main); resize: vertical;"></textarea>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 2rem 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div style="padding: 0; color: var(--fg-main);">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; margin: 0; font-weight: 800;">Knowledge Base (RAG)</h3>
+                            <span style="font-size: 0.8rem; color: var(--fg-muted); font-weight: 600;">Upload PDF/TXT files to give your bot specific facts.</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div id="kb-file-list" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="file" id="kb-file-upload" accept=".pdf,.txt" style="display: none;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('kb-file-upload').click()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                            Select PDF or TXT
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btn-upload-kb" style="padding: 0.5rem 1rem; font-size: 0.875rem; display: none;">Upload File</button>
+                        <span id="kb-upload-status" style="font-size: 0.8rem; color: var(--fg-muted);">Save the agent first before uploading.</span>
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 2rem 0;">
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div style="padding: 0; color: var(--fg-main);">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; margin: 0; font-weight: 800;">Team Access</h3>
+                            <span style="font-size: 0.8rem; color: var(--fg-muted); font-weight: 600;">Grant managers access to reply to leads.</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div id="team-managers-list" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="email" id="new-manager-email" placeholder="manager@company.com" style="flex-grow: 1;">
+                        <button type="button" class="btn btn-secondary" id="btn-add-manager">Add</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+                        <label style="margin: 0;">Final Generated Prompt (Editable)</label>
+                        <button type="button" class="btn btn-magic" id="btn-enhance-prompt" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; height: auto;">
+                            <span class="btn-content">
+                                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg>
+                                Enhance with AI
+                            </span>
+                        </button>
+                    </div>
+                    <div id="ai-prompt-container" class="ai-prompt-wrapper">
+                        <textarea id="agent-prompt" rows="6" placeholder="The finalized system prompt will appear here. The bot uses this exact text."></textarea>
+                    </div>
+                </div>                
+                <button type="submit" class="btn btn-primary w-full" style="margin-top: 2rem; padding: 1rem; font-size: 1.05rem;" id="agent-submit-btn">Deploy Agent</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Onboarding Wizard Modal -->
+    <div id="onboarding-modal" class="modal">
+        <div class="modal-backdrop" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);"></div>
+        <div class="modal-content" style="max-width: 500px; text-align: center; padding: 3rem 2.5rem;">
+            <div style="width: 64px; height: 64px; background: var(--fg-main); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin: 0 auto 1.5rem;">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg>
+            </div>
+            <h2 style="font-size: 2rem; margin-bottom: 1rem;">Welcome to Zentia</h2>
+            <p style="color: var(--fg-muted); margin-bottom: 2.5rem; line-height: 1.6;">Let's deploy your first AI Sales Agent. Follow these steps to automate your top-of-funnel.</p>
+
+            <div style="text-align: left; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1rem;">
+                <h4 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="width: 24px; height: 24px; background: var(--fg-main); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem;">1</span> 
+                    Get a Bot Token
+                </h4>
+                <p style="font-size: 0.875rem; color: var(--fg-muted); margin-bottom: 0;">Open <a href="https://t.me/BotFather" target="_blank" style="color: #0088cc; font-weight: 700;">@BotFather</a> in Telegram, send <code>/newbot</code>, and copy the HTTP API Token. This links your AI to Telegram.</p>
+            </div>
+
+            <div style="text-align: left; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1rem;">
+                <h4 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="width: 24px; height: 24px; background: var(--fg-main); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem;">2</span> 
+                    Add API Key
+                </h4>
+                <p style="font-size: 0.875rem; color: var(--fg-muted); margin-bottom: 0;">Go to the <b>Settings</b> tab (bottom left) and insert your OpenRouter or Gemini API Key. This is the brain of your bot.</p>
+            </div>
+
+            <div style="text-align: left; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
+                <h4 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="width: 24px; height: 24px; background: var(--fg-main); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem;">3</span> 
+                    Create Your Agent
+                </h4>
+                <p style="font-size: 0.875rem; color: var(--fg-muted); margin-bottom: 0;">Click the button below to open the agent builder. Fill in the token and tell the AI what its goal is!</p>
+            </div>
+
+            <button id="start-onboarding-btn" class="btn btn-primary w-full" style="padding: 1rem; font-size: 1.05rem;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: middle;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Create My First Agent
+            </button>
+        </div>
+    </div>
+    <!-- Demo Video Modal -->
+    <div id="video-modal" class="modal">
+        <div class="modal-backdrop" id="video-backdrop" style="background: rgba(0,0,0,0.9);"></div>
+        <div class="modal-content" style="max-width: 900px; padding: 0; background: transparent; border: none; box-shadow: none;">
+            <button class="modal-close" id="close-video-modal" style="top: -3rem; right: 0; color: white;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div style="width: 100%; aspect-ratio: 16/9; background: #111; border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">
+                <!-- Placeholder for actual video iframe (YouTube/Vimeo) -->
+                <div style="text-align: center; color: white;">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 1rem; opacity: 0.5;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <h3 style="font-weight: 600;">Product Demo Video</h3>
+                    <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">(Replace with YouTube/Vimeo iframe in production)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Auth Modals -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="close-modal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            
+            <!-- Login Form -->
+            <div id="login-form-container">
+                <h2 style="margin-bottom: 0.5rem;">Welcome back</h2>
+                <p style="margin-bottom: 2rem; font-size: 0.875rem;">Enter your details to sign in to your account.</p>
+                
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">Email address</label>
+                        <input type="email" id="login-email" placeholder="name@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <div id="login-error" class="auth-error"></div>
+                    <button type="submit" class="btn btn-primary w-full" style="margin-top: 1rem;">Sign in</button>
+                </form>
+                
+                <p style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem; color: var(--fg-muted);">
+                    Don't have an account? <a href="#" id="switch-to-register" style="color: var(--fg-main); font-weight: 600;">Sign up</a>
+                </p>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="register-form-container" style="display: none;">
+                <h2 style="margin-bottom: 0.5rem;">Create account</h2>
+                <p style="margin-bottom: 2rem; font-size: 0.875rem;">Join Zentia AI and start scaling your outbound today.</p>
+                
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="register-email">Email address</label>
+                        <input type="email" id="register-email" placeholder="name@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" placeholder="Minimum 6 characters" required minlength="6">
+                    </div>
+                    <div id="register-error" class="auth-error"></div>
+                    <button type="submit" class="btn btn-primary w-full" style="margin-top: 1rem;">Create account</button>
+                </form>
+                
+                <p style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem; color: var(--fg-muted);">
+                    Already have an account? <a href="#" id="switch-to-login" style="color: var(--fg-main); font-weight: 600;">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Subscription Plan Modal -->
+    <div id="stripe-modal" class="modal">
+        <div class="modal-backdrop" id="stripe-backdrop"></div>
+        <div class="modal-content" style="max-width: 600px; padding: 2.5rem;">
+            <button class="modal-close" id="close-stripe-modal" style="top: 1.5rem; right: 1.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="margin-bottom: 0.5rem; font-size: 1.75rem;">Select a Plan</h2>
+                <p style="color: var(--fg-muted); font-size: 0.95rem;">This is a simulated checkout. No real charge will be made.</p>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Starter Plan -->
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary);">
+                    <div>
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.25rem;">Starter</h4>
+                        <p style="color: var(--fg-muted); font-size: 0.85rem; margin: 0;">Up to 3 Active Agents</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-weight: 700; font-size: 1.25rem;">$49<span style="font-size: 0.85rem; font-weight: 500; color: var(--fg-muted);">/mo</span></span>
+                        <button class="btn btn-secondary plan-select-btn" data-plan="starter" style="width: 100px;">Select</button>
+                    </div>
+                </div>
+
+                <!-- Pro Plan -->
+                <div style="border: 1px solid #8b5cf6; border-radius: var(--radius-md); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(139, 92, 246, 0.05); position: relative;">
+                    <div style="position: absolute; top: -10px; left: 1.5rem; background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">MOST POPULAR</div>
+                    <div>
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.25rem; color: var(--fg-main);">Pro</h4>
+                        <p style="color: var(--fg-muted); font-size: 0.85rem; margin: 0;">Up to 10 Active Agents</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-weight: 700; font-size: 1.25rem;">$149<span style="font-size: 0.85rem; font-weight: 500; color: var(--fg-muted);">/mo</span></span>
+                        <button class="btn btn-primary plan-select-btn" data-plan="pro" style="width: 100px; background: #8b5cf6; border-color: #8b5cf6;">Select</button>
+                    </div>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary);">
+                    <div>
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.25rem;">Enterprise</h4>
+                        <p style="color: var(--fg-muted); font-size: 0.85rem; margin: 0;">Unlimited Agents</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-weight: 700; font-size: 1.25rem;">$499<span style="font-size: 0.85rem; font-weight: 500; color: var(--fg-muted);">/mo</span></span>
+                        <button class="btn btn-secondary plan-select-btn" data-plan="enterprise" style="width: 100px;">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-backdrop" id="confirm-backdrop"></div>
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding: 2.5rem;">
+            <div id="confirm-icon-container" style="width: 50px; height: 50px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </div>
+            <h3 id="confirm-title" style="margin-bottom: 0.75rem; font-size: 1.25rem;">Are you sure?</h3>
+            <p id="confirm-message" style="color: var(--fg-muted); font-size: 0.95rem; margin-bottom: 2rem;">This action cannot be undone.</p>
+            <div style="display: flex; gap: 1rem;">
+                <button id="confirm-cancel-btn" class="btn btn-secondary w-full" style="padding: 0.75rem;">Cancel</button>
+                <button id="confirm-action-btn" class="btn btn-primary w-full" style="padding: 0.75rem; background: #ef4444; border-color: #ef4444;">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

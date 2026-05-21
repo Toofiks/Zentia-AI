@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: zentia-ai
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DOMAIN_URL
+        value: https://zentia-ai.onrender.com
+      - key: SUPABASE_URL
+        value: https://keqrwmlmrhzikafpjhmp.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlcXJ3bWxtcmh6aWthZnBqaG1wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODQ4MTc0OSwiZXhwIjoyMDk0MDU3NzQ5fQ.9yb-6vyx6QKWjrAOhI0qv7EfXvduV-Y99lRMpyAt92U
+      - key: OPENROUTER_API_KEY
+        value: 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
+      - key: GEMINI_API_KEY
+        value: AIzaSyDRIMJ0qkBpwQLZwTH0w-ABARoj_y9q_l8
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8748516176:AAE8OSdVy5tp12IPmUhm1_zg1PqlyCj5mjI
