@@ -266,7 +266,7 @@ Output Requirements:
 
         const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
         const completion = await activeOpenai.chat.completions.create({ 
-            model: 'google/gemini-2.0-flash', 
+            model: 'google/gemini-2.5-flash', 
             messages: [{ role: 'user', content: expansionPrompt }], 
             max_tokens: 2000 
         });
