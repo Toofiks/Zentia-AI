@@ -21,6 +21,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 const apiLimiter = rateLimit({ windowMs: 15*60*1000, max: 2000, validate:{xForwardedForHeader:false} });
+const promptLimiter = rateLimit({ windowMs: 15*60*1000, max: 100, message: { error: 'Too many prompt requests, please try again later.' } });
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
@@ -265,7 +266,7 @@ Output Requirements:
 
         const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
         const completion = await activeOpenai.chat.completions.create({ 
-            model: 'google/gemini-2.5-flash', 
+            model: 'google/gemini-2.0-flash', 
             messages: [{ role: 'user', content: expansionPrompt }], 
             max_tokens: 2000 
         });
