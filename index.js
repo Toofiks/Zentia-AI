@@ -31,16 +31,20 @@ const processingChats = new Set();
 let bannedUsers = [];
 
 async function loadGlobalBans() {
-    const { data } = await supabase.from('global_bans').select('chat_id');
-    if (data) bannedUsers = data.map(b => b.chat_id.toString());
+    try {
+        const { data, error } = await supabase.from('global_bans').select('chat_id');
+        if (!error && data) { bannedUsers = data.map(b => b.chat_id.toString()); }
+    } catch(e) { console.error('Ban load error:', e); }
 }
 
 async function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Missing header' });
-    const { data: { user }, error } = await supabase.auth.getUser(authHeader.split(' ')[1]);
-    if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
-    req.user = user; next();
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(authHeader.split(' ')[1]);
+        if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
+        req.user = user; next();
+    } catch (e) { return res.status(500).json({ error: 'Auth failed' }); }
 }
 
 async function checkAccess(req, agentId) {
@@ -59,30 +63,30 @@ function startBot(agent) {
         if (bannedUsers.includes(chatId)) return;
         const userMessage = ctx.message.text || "[Media]";
         
-        await supabase.from('bot_users').upsert({ 
-            chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, 
-            lastActivity: new Date().toISOString(), user_id: agent.user_id, ip_address: 'TG_GATEWAY' 
-        }, { onConflict: 'chatId, agentId' });
+        // Manual upsert for bot_users
+        try {
+            const { data: existing } = await supabase.from('bot_users').select('id').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
+            if (existing?.[0]) {
+                await supabase.from('bot_users').update({ username: ctx.from.username || 'Anon', lastActivity: new Date().toISOString() }).eq('id', existing[0].id);
+            } else {
+                await supabase.from('bot_users').insert({ chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, user_id: agent.user_id });
+            }
+        } catch(e) {}
 
         if (!agent.isActive || processingChats.has(chatId)) return;
         processingChats.add(chatId);
 
         try {
-            // Load history from session
             const { data: sess } = await supabase.from('chat_sessions').select('id, history').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
             let history = sess?.[0]?.history || [];
             
-            // Check takeover status
             const lastDisabled = history.map(m => m.content).lastIndexOf('[AI_DISABLED]');
             const lastEnabled = history.map(m => m.content).lastIndexOf('[AI_ENABLED]');
-            if (lastDisabled > lastEnabled) { return; }
+            if (lastDisabled > lastEnabled) return;
 
-            // Add user message
-            const userMsgObj = { role: "user", content: userMessage, timestamp: new Date().toISOString() };
-            history.push(userMsgObj);
+            history.push({ role: "user", content: userMessage, timestamp: new Date().toISOString() });
             if (history.length > 20) history = history.slice(-20);
 
-            // AI Response
             const { data: owner } = await supabase.auth.admin.getUserById(agent.user_id);
             const key = owner?.user?.user_metadata?.openRouterKey || process.env.OPENROUTER_API_KEY;
             
@@ -92,33 +96,22 @@ function startBot(agent) {
                 max_tokens: 1000 
             });
             const aiResponse = completion.choices[0]?.message?.content || "No response";
-            
             await ctx.reply(aiResponse);
             
-            // Add bot message
-            const botMsgObj = { role: "assistant", content: aiResponse, timestamp: new Date().toISOString() };
-            history.push(botMsgObj);
+            history.push({ role: "assistant", content: aiResponse, timestamp: new Date().toISOString() });
 
-            // Save session
             if (sess?.[0]) await supabase.from('chat_sessions').update({ history, updated_at: new Date().toISOString() }).eq('id', sess[0].id);
             else await supabase.from('chat_sessions').insert({ chatId, agentId: agent.id, history });
 
-            // Sync with Leads if qualified
             let status = null;
             if (aiResponse.includes('[MEETING_BOOKED]')) status = 'Meeting Booked';
             else if (aiResponse.includes('[LEAD_QUALIFIED]')) status = 'Qualified';
 
-            const { data: lead } = await supabase.from('leads').select('id, status').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
-            if (status || lead) {
-                const finalStatus = status || lead?.status || 'Active';
-                await supabase.from('leads').upsert({ 
-                    chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, 
-                    history, status: finalStatus, lastMessage: aiResponse, timestamp: new Date().toISOString(), user_id: agent.user_id 
-                }, { onConflict: 'chatId, agentId' });
+            if (status) {
+                await supabase.from('leads').upsert({ chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, history, status, lastMessage: aiResponse, timestamp: new Date().toISOString(), user_id: agent.user_id }, { onConflict: 'chatId, agentId' });
             }
-        } catch (e) {
-            console.error('Bot processing error:', e);
-        } finally { processingChats.delete(chatId); }
+        } catch (e) { console.error('Bot Error:', e); } 
+        finally { processingChats.delete(chatId); }
     });
     bot.launch({ dropPendingUpdates: true }).catch(() => {});
 }
@@ -134,7 +127,7 @@ app.get('/api/leads', authMiddleware, async (req, res) => {
         const admins = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
         let query = supabase.from('leads').select('*');
         
-        // ALWAYS filter for Qualified/Meeting Booked for the Inbox
+        // Default Inbox: ONLY Qualified/Meeting Booked
         query = query.or('status.eq.Qualified,status.eq.Meeting Booked');
 
         if (!admins.includes(req.user.email) && !req.user.user_metadata?.is_admin) {
@@ -167,9 +160,9 @@ app.get('/api/agents', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/leads/:chatId/message', authMiddleware, async (req, res) => {
-    if (!await checkAccess(req, req.body.agentId)) return res.status(403).send('Forbidden');
+    if (!await checkAccess(req, req.body.agentId)) return res.status(403).json({ error: 'Forbidden' });
     const agent = agents.get(req.body.agentId);
-    if (!agent?.botInstance) return res.status(404).send('Bot offline');
+    if (!agent?.botInstance) return res.status(404).json({ error: 'Bot offline' });
     try {
         const sent = await agent.botInstance.telegram.sendMessage(req.params.chatId, req.body.message);
         const { data: lead } = await supabase.from('leads').select('history').eq('chatId', req.params.chatId).eq('agentId', req.body.agentId).single();
@@ -183,21 +176,61 @@ app.post('/api/leads/:chatId/message', authMiddleware, async (req, res) => {
 
 app.put('/api/leads/:chatId/ai-toggle', authMiddleware, async (req, res) => {
     const { chatId } = req.params; const { agentId, aiDisabled } = req.body;
-    if (!await checkAccess(req, agentId)) return res.status(403).send('Forbidden');
+    if (!await checkAccess(req, agentId)) return res.status(403).json({ error: 'Forbidden' });
     
-    // Toggle in Leads
-    const { data: lead } = await supabase.from('leads').select('history').eq('chatId', chatId).eq('agentId', agentId).single();
+    const { data: lead } = await supabase.from('leads').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
     if (lead) {
         const history = [...(lead.history || []), { role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' }];
-        await supabase.from('leads').update({ history }).eq('chatId', chatId).eq('agentId', agentId);
+        await supabase.from('leads').update({ history }).eq('id', lead.id);
     }
-    
-    // Toggle in Chat Sessions
-    const { data: sess } = await supabase.from('chat_sessions').select('history').eq('chatId', chatId).eq('agentId', agentId).single();
+    const { data: sess } = await supabase.from('chat_sessions').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
     if (sess) {
         const history = [...(sess.history || []), { role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' }];
-        await supabase.from('chat_sessions').update({ history }).eq('chatId', chatId).eq('agentId', agentId);
+        await supabase.from('chat_sessions').update({ history }).eq('id', sess.id);
     }
+    res.json({ success: true });
+});
+
+// Managers & KB
+app.get('/api/agents/:id/managers', authMiddleware, async (req, res) => {
+    if (!await checkAccess(req, req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+    const { data } = await supabase.from('agent_managers').select('*').eq('agentId', req.params.id);
+    res.json(data || []);
+});
+app.post('/api/agents/:id/managers', authMiddleware, async (req, res) => {
+    if (!await checkAccess(req, req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+    await supabase.from('agent_managers').insert({ agentId: req.params.id, email: req.body.email });
+    res.json({ success: true });
+});
+app.delete('/api/agents/:agentId/managers/:id', authMiddleware, async (req, res) => {
+    if (!await checkAccess(req, req.params.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    await supabase.from('agent_managers').delete().eq('id', req.params.id);
+    res.json({ success: true });
+});
+
+app.get('/api/knowledge/:agentId', authMiddleware, async (req, res) => {
+    if (!await checkAccess(req, req.params.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    const { data } = await supabase.from('knowledge_base').select('id, filename, uploaded_at').eq('agentId', req.params.agentId);
+    res.json(data || []);
+});
+app.post('/api/knowledge/:agentId', authMiddleware, upload.single('file'), async (req, res) => {
+    if (!await checkAccess(req, req.params.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    const file = req.file; if (!file) return res.status(400).json({ error: 'No file' });
+    try {
+        let content = '';
+        if (file.mimetype === 'application/pdf') {
+            const dataBuffer = await fsPromises.readFile(file.path);
+            const data = await pdfParse(dataBuffer); content = data.text;
+        } else content = await fsPromises.readFile(file.path, 'utf8');
+        await fsPromises.unlink(file.path);
+        await supabase.from('knowledge_base').insert({ agentId: req.params.agentId, filename: file.originalname, content, user_id: req.user.id });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/knowledge/:id', authMiddleware, async (req, res) => {
+    const { data: kb } = await supabase.from('knowledge_base').select('agentId').eq('id', req.params.id).single();
+    if (!kb || !await checkAccess(req, kb.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    await supabase.from('knowledge_base').delete().eq('id', req.params.id);
     res.json({ success: true });
 });
 
@@ -205,15 +238,17 @@ app.put('/api/leads/:chatId/ai-toggle', authMiddleware, async (req, res) => {
 async function adminMiddleware(req, res, next) {
     const admins = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
     if (admins.includes(req.user.email) || req.user.user_metadata?.is_admin) next();
-    else res.status(403).send('Forbidden');
+    else res.status(403).json({ error: 'Admin access required' });
 }
 
 app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) => {
-    const { count: ac } = await supabase.from('agents').select('*', { count: 'exact', head: true });
-    const { data: users } = await supabase.from('bot_users').select('chatId');
-    const unique = new Set((users||[]).map(u=>u.chatId.toString())).size;
-    const { count: lc } = await supabase.from('leads').select('*', { count: 'exact', head: true });
-    res.json({ agents: ac, users: unique, leads: lc, banned: bannedUsers.length });
+    try {
+        const { count: ac } = await supabase.from('agents').select('*', { count: 'exact', head: true });
+        const { data: users } = await supabase.from('bot_users').select('chatId');
+        const unique = new Set((users||[]).map(u=>u.chatId.toString())).size;
+        const { count: lc } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+        res.json({ agents: ac, users: unique, leads: lc, banned: bannedUsers.length });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/agents', authMiddleware, adminMiddleware, async (req, res) => {
@@ -239,13 +274,13 @@ app.post('/api/admin/ban', authMiddleware, adminMiddleware, async (req, res) => 
 });
 
 app.get('/api/admin/system-users', authMiddleware, async (req, res) => {
-    if (req.user.email !== 'toofiks.fx@gmail.com') return res.status(403).send('Forbidden');
+    if (req.user.email !== 'toofiks.fx@gmail.com') return res.status(403).json({ error: 'Forbidden' });
     const { data: { users } } = await supabase.auth.admin.listUsers();
     res.json((users || []).map(u => ({ id: u.id, email: u.email, isAdmin: !!u.user_metadata?.is_admin })));
 });
 
 app.post('/api/admin/set-privileges', authMiddleware, async (req, res) => {
-    if (req.user.email !== 'toofiks.fx@gmail.com') return res.status(403).send('Forbidden');
+    if (req.user.email !== 'toofiks.fx@gmail.com') return res.status(403).json({ error: 'Forbidden' });
     await supabase.auth.admin.updateUserById(req.body.userId, { user_metadata: { is_admin: req.body.isAdmin } });
     res.json({ success: true });
 });
@@ -258,7 +293,7 @@ app.delete('/api/admin/chats/:id', authMiddleware, adminMiddleware, async (req, 
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`[Server] ${PORT}`);
+    console.log(`[Server] Running on port ${PORT}`);
     await loadAgentsFromDB(); await loadGlobalBans();
 });
 
