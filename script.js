@@ -631,23 +631,26 @@ function updateChatHistory(chatId) {
     if (!lead) return;
 
     const historyEl = document.getElementById('inbox-chat-history');
-    const isAtBottom = historyEl.scrollHeight - historyEl.scrollTop <= historyEl.clientHeight + 10;
+    if (!historyEl) return;
+    
+    const isAtBottom = historyEl.scrollHeight - historyEl.scrollTop <= historyEl.clientHeight + 20;
 
-    // Check if length is same, don't redraw everything to avoid flicker
-    if (historyEl.children.length === lead.history.filter(m => m.role !== 'system').length && historyEl.dataset.chatId === String(chatId)) {
-        return; // No new messages
+    // Build a unique identifier for the current state to prevent redundant renders
+    const historyState = lead.history.filter(m => m.role !== 'system').map(m => m.content).join('|');
+    if (historyEl.dataset.state === historyState && historyEl.dataset.chatId === String(chatId)) {
+        return; 
     }
 
     historyEl.innerHTML = '';
     historyEl.dataset.chatId = chatId;
+    historyEl.dataset.state = historyState;
     
-    lead.history.forEach((msg, index) => {
+    lead.history.forEach((msg) => {
         if (msg.role === 'system') return;
         const bubble = document.createElement('div');
         bubble.className = `chat-bubble ${msg.role === 'assistant' ? 'bot' : 'user'}`;
         
         let contentHtml = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-        // Clean up markdown for rendering
         contentHtml = contentHtml.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         contentHtml = contentHtml.replace(/\*(.*?)\*/g, '<em>$1</em>');
         
