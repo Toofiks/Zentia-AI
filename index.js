@@ -79,9 +79,9 @@ function startBot(agent) {
         try {
             const { data: existing } = await supabase.from('bot_users').select('id').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
             if (existing?.[0]) {
-                await supabase.from('bot_users').update({ username: ctx.from.username || 'Anon', lastActivity: new Date().toISOString() }).eq('id', existing[0].id);
+                await supabase.from('bot_users').update({ username: ctx.from.username || 'Anon', lastActivity: new Date().toISOString(), ip_address: 'Telegram Gateway' }).eq('id', existing[0].id);
             } else {
-                await supabase.from('bot_users').insert({ chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, user_id: agent.user_id });
+                await supabase.from('bot_users').insert({ chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, user_id: agent.user_id, ip_address: 'Telegram Gateway' });
             }
         } catch(e) {}
 
@@ -101,10 +101,33 @@ function startBot(agent) {
 
             const { data: owner } = await supabase.auth.admin.getUserById(agent.user_id);
             const key = owner?.user?.user_metadata?.openRouterKey || process.env.OPENROUTER_API_KEY;
+            const geminiKey = owner?.user?.user_metadata?.geminiKey || process.env.GEMINI_API_KEY;
+
+            // RAG Vector Search
+            let ragContext = "";
+            if (geminiKey) {
+                try {
+                    const genAI = new GoogleGenerativeAI(geminiKey);
+                    const embedModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+                    const result = await embedModel.embedContent(userMessage);
+                    const queryEmbedding = result.embedding.values;
+                    
+                    const { data: chunks } = await supabase.rpc('match_knowledge', {
+                        query_embedding: queryEmbedding,
+                        match_threshold: 0.70,
+                        match_count: 3,
+                        p_agent_id: agent.id
+                    });
+
+                    if (chunks && chunks.length > 0) {
+                        ragContext = "\n\nKNOWLEDGE BASE CONTEXT (Use this to answer questions):\n" + chunks.map(c => c.content).join("\n\n");
+                    }
+                } catch(e) { console.error('[Vector DB] Search error:', e.message); }
+            }
             
             const completion = await (new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key })).chat.completions.create({ 
                 model: agent.model, 
-                messages: [{ role: "system", content: agent.prompt }, ...history.filter(m => m.role !== 'system')], 
+                messages: [{ role: "system", content: agent.prompt + ragContext }, ...history.filter(m => m.role !== 'system')], 
                 max_tokens: 1000 
             });
             const aiResponse = completion.choices[0]?.message?.content || "No response";
@@ -346,7 +369,41 @@ app.post('/api/knowledge/:agentId', authMiddleware, upload.single('file'), async
             const data = await pdfParse(dataBuffer); content = data.text;
         } else content = await fsPromises.readFile(file.path, 'utf8');
         await fsPromises.unlink(file.path);
-        await supabase.from('knowledge_base').insert({ agentId: req.params.agentId, filename: file.originalname, content, user_id: req.user.id });
+        
+        // Insert main document record
+        const { data: kbDoc, error: kbErr } = await supabase.from('knowledge_base')
+            .insert({ agentId: req.params.agentId, filename: file.originalname, content: 'Vectorized Document', user_id: req.user.id })
+            .select('id').single();
+            
+        if (kbErr) throw kbErr;
+
+        // Process Vectors with Gemini
+        const owner = await supabase.auth.admin.getUserById(req.user.id);
+        const geminiKey = owner?.data?.user?.user_metadata?.geminiKey || process.env.GEMINI_API_KEY;
+        
+        if (geminiKey) {
+            const genAI = new GoogleGenerativeAI(geminiKey);
+            const embedModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+            const chunks = chunkText(content);
+            
+            for (const chunk of chunks) {
+                if (chunk.trim().length < 10) continue;
+                try {
+                    const result = await embedModel.embedContent(chunk);
+                    const embedding = result.embedding.values;
+                    await supabase.from('knowledge_chunks').insert({
+                        "agentId": req.params.agentId,
+                        document_id: kbDoc.id,
+                        content: chunk,
+                        embedding: embedding,
+                        user_id: req.user.id
+                    });
+                } catch (embedErr) {
+                    console.error('[Vector DB] Failed to embed chunk:', embedErr.message);
+                }
+            }
+        }
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
