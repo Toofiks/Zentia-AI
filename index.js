@@ -236,6 +236,44 @@ app.get('/api/agents', authMiddleware, async (req, res) => {
     res.json(all.map(a => ({ ...a, uniqueUsers: (a.uniqueUsers || []).length })));
 });
 
+app.post('/api/tools/expand-prompt', authMiddleware, promptLimiter, async (req, res) => {
+    const { goal, audience, tone, rules } = req.body;
+    
+    try {
+        const { data: ownerData } = await supabase.auth.admin.getUserById(req.user.id);
+        const ownerMeta = ownerData?.user?.user_metadata || {};
+        const key = ownerMeta.openRouterKey || ownerMeta.geminiKey || process.env.OPENROUTER_API_KEY;
+        
+        if (!key) {
+            return res.status(400).json({ error: 'API_KEY_MISSING', message: 'API Key is missing.' });
+        }
+
+        const expansionPrompt = `You are an expert prompt engineer. Your goal is to take basic user inputs and convert them into a highly detailed, professional, and strict system prompt for an AI sales agent. 
+
+Input Parameters:
+- Goal: ${goal || 'Not specified'}
+- Target Audience: ${audience || 'Not specified'}
+- Tone of Voice: ${tone || 'Not specified'}
+- Strict Rules: ${rules || 'None'}
+
+Output Requirements:
+1. Start with a clear "Role and Primary Objective".
+2. Detail the "Target Audience Definition and Nuances".
+3. Specify exactly how to implement the "Tone of Voice".
+4. Expand the "Strict Rules" into a robust set of "Behavioral Guardrails", ensuring the AI stays on topic and follows the constraints.
+5. Provide ONLY the final compiled system prompt. Do NOT add greetings, explanations, or markdown code blocks (like \`\`\`). Provide plain text.`;
+
+        const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
+        const completion = await activeOpenai.chat.completions.create({ 
+            model: 'google/gemini-2.5-flash', 
+            messages: [{ role: 'user', content: expansionPrompt }], 
+            max_tokens: 2000 
+        });
+        
+        res.json({ expandedPrompt: completion.choices[0]?.message?.content || "Failed to expand prompt." });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/agents', authMiddleware, async (req, res) => {
     const { id, name, token, model, prompt, payment, webhookUrl, googleSheetsUrl, removeBranding, calendarUrl } = req.body;
     const agentId = id || 'agent_' + Date.now();
