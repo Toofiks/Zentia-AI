@@ -281,11 +281,21 @@ app.put('/api/agents/:id', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
-    const { count: ac } = await supabase.from('agents').select('*', { count: 'exact', head: true });
-    const { data: usersData } = await supabase.from('bot_users').select('chatId');
-    const uniqueUsersCount = new Set((usersData || []).map(u => u.chatId.toString())).size;
-    const { count: lc } = await supabase.from('leads').select('*', { count: 'exact', head: true });
-    res.json({ agents: ac, users: uniqueUsersCount, leads: lc, banned: bannedUsers.length });
+    try {
+        const { count: ac } = await supabase.from('agents').select('*', { count: 'exact', head: true });
+        const { data: usersData } = await supabase.from('bot_users').select('chatId');
+        const uniqueUsersCount = new Set((usersData || []).map(u => u.chatId.toString())).size;
+        const { count: lc } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+        res.json({ agents: ac, users: uniqueUsersCount, leads: lc, banned: bannedUsers.length });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/agents', adminMiddleware, async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('agents').select('*').order('tokensUsed', { ascending: false });
+        if (error) throw error;
+        res.json(data || []);
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/users', adminMiddleware, async (req, res) => {
