@@ -21,19 +21,18 @@ dotenv.config();
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 const app = express();
-app.set('trust proxy', 1); // trust first proxy for ngrok (Crucial for rate limiters)
+app.set('trust proxy', 1);
 
-// Rate limiting setup
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 2000, // Increased significantly for ngrok/local testing
+    windowMs: 15 * 60 * 1000,
+    max: 2000,
     validate: { xForwardedForHeader: false },
     message: { error: 'Too many requests, please try again later.' }
 });
 
 const promptLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 100, // limit prompt generation heavily to prevent abuse
+    windowMs: 60 * 60 * 1000,
+    max: 100,
     validate: { xForwardedForHeader: false },
     message: { error: 'Prompt generation limit reached. Try again in an hour.' }
 });
@@ -52,54 +51,39 @@ async function loadGlobalBans() {
     } catch(e) { console.error('Ban load error:', e); }
 }
 
-// Stripe Webhook MUST use express.raw before express.json() is applied globally
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
         return res.status(400).send('Stripe is not configured.');
     }
-
     const sig = req.headers['stripe-signature'];
     let event;
-
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
         console.error(`[Stripe] Webhook Error: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
-
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const userId = session.client_reference_id; // We will pass user.id here when creating the session
+        const userId = session.client_reference_id;
         const plan = session.metadata?.plan || 'pro';
-
         if (userId) {
             console.log(`[Stripe] Payment success for user ${userId}. Upgrading to ${plan.toUpperCase()}.`);
             try {
-                // Supabase admin client is needed to update user metadata
-                await supabase.auth.admin.updateUserById(userId, {
-                    user_metadata: { plan: plan }
-                });
-            } catch (updateErr) {
-                console.error(`[Stripe] Failed to update user plan:`, updateErr.message);
-            }
+                await supabase.auth.admin.updateUserById(userId, { user_metadata: { plan: plan } });
+            } catch (updateErr) { console.error(`[Stripe] Failed to update user plan:`, updateErr.message); }
         }
     }
-
     res.json({ received: true });
 });
 
 app.use(express.json());
 app.use(express.static('.'));
-app.use('/api/', apiLimiter); // Apply general limit to all API routes
+app.use('/api/', apiLimiter);
 
 const upload = multer({ dest: 'uploads/' });
 
 const openRouterKey = process.env.OPENROUTER_API_KEY;
-if (!openRouterKey) {
-    console.error('CRITICAL ERROR: OPENROUTER_API_KEY is missing in .env');
-}
-
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseKey) {
@@ -108,29 +92,21 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+const openai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: openRouterKey || 'dummy' });
 
-const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: openRouterKey || 'dummy',
-});
-
-const agents = new Map(); // Store in-memory bot instances
-const processingChats = new Set(); // Prevent race conditions
+const agents = new Map();
+const processingChats = new Set();
 
 async function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'No authorization header' });
     const token = authHeader.split(' ')[1];
-    
     try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (error || !user) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+        if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
         req.user = user;
         next();
     } catch (e) {
-        console.error(`[Auth] Middleware Error:`, e.message);
         return res.status(500).json({ error: 'Authentication service unavailable' });
     }
 }
@@ -139,17 +115,12 @@ async function loadAgentsFromDB() {
     try {
         const { data, error } = await supabase.from('agents').select('*');
         if (error) throw error;
-        
         for (const agent of data) {
             agents.set(agent.id, agent);
-            if (agent.isActive) {
-                startBot(agent);
-            }
+            if (agent.isActive) startBot(agent);
         }
         console.log(`[Storage] Resumed ${agents.size} agents from Supabase.`);
-    } catch (e) {
-        console.error('[Storage] Error loading agents:', e.message);
-    }
+    } catch (e) { console.error('[Storage] Error loading agents:', e.message); }
 }
 
 async function updateAgentInDB(agent) {
@@ -158,7 +129,6 @@ async function updateAgentInDB(agent) {
 }
 
 function startBot(agent) {
-    console.log(`[Bot ${agent.id}] Starting bot...`);
     const bot = new Telegraf(agent.token);
     agent.botInstance = bot;
 
@@ -167,12 +137,7 @@ function startBot(agent) {
     bot.on('message', async (ctx) => {
         try {
             const chatId = ctx.chat.id;
-            
-            // Global Ban Check
-            if (bannedUsers.includes(chatId.toString())) {
-                console.log(`[Bot ${agent.id}] Ignored banned user: ${chatId}`);
-                return;
-            }
+            if (bannedUsers.includes(chatId.toString())) return;
 
             const username = ctx.from.username || ctx.from.first_name || 'Anonymous';
             let userMessage = '';
@@ -182,7 +147,6 @@ function startBot(agent) {
                 userMessage = ctx.message.text;
                 messageContent = userMessage;
             } else if (ctx.message.voice) {
-                // Transcription logic omitted for brevity, but could be restored
                 userMessage = "[Voice Message]";
                 messageContent = userMessage;
             } else if (ctx.message.photo) {
@@ -190,11 +154,10 @@ function startBot(agent) {
                 messageContent = userMessage;
             } else return;
 
-            // Tracking with IP (Telegram doesn't provide user IP, but we store placeholder)
             const userData = {
                 chatId, username, agentId: agent.id, agentName: agent.name,
                 lastActivity: new Date().toISOString(), user_id: agent.user_id,
-                ip_address: 'Telegram Proxy'
+                ip_address: 'Telegram Proxy' 
             };
             
             const { data: existingUser } = await supabase.from('bot_users').select('id').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
@@ -204,8 +167,7 @@ function startBot(agent) {
                 await supabase.from('bot_users').insert(userData);
             }
 
-            if (!agent.isActive) return;
-            if (processingChats.has(chatId)) return;
+            if (!agent.isActive || processingChats.has(chatId)) return;
             processingChats.add(chatId);
 
             let session = { history: [] };
@@ -234,74 +196,45 @@ function startBot(agent) {
                 if (newSession) sessionId = newSession.id;
             }
 
-            // Lead immediate save
-            try {
-                const { data: earlyLeads } = await supabase.from('leads').select('id, history').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
-                if (earlyLeads && earlyLeads.length > 0) {
-                    const leadHistory = [...(earlyLeads[0].history || []), userMsgObj];
-                    await supabase.from('leads').update({ history: leadHistory, lastMessage: userMessage, timestamp: new Date().toISOString() }).eq('id', earlyLeads[0].id);
-                }
-            } catch (e) {}
+            let placeholder = await ctx.reply('✍️...');
+            const messages = [
+                { role: "system", content: agent.prompt },
+                ...session.history.filter(h => h.role !== 'system'),
+                { role: "user", content: userMessage }
+            ];
 
-            let placeholder;
-            try {
-                placeholder = await ctx.reply('✍️...');
-                
-                const messages = [
-                    { role: "system", content: agent.prompt },
-                    ...session.history.filter(h => h.role !== 'system'),
-                    { role: "user", content: userMessage }
-                ];
+            let aiResponse = "No response.";
+            let success = false;
+            let lastError = null;
 
-                let aiResponse = "No response.";
-                let success = false;
-                let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const { data: ownerData } = await supabase.auth.admin.getUserById(agent.user_id);
+                    const meta = ownerData?.user?.user_metadata || {};
+                    const key = meta.openRouterKey || meta.geminiKey || process.env.OPENROUTER_API_KEY;
+                    if (!key) throw new Error("API_KEY_MISSING");
 
-                for (let attempt = 1; attempt <= 3; attempt++) {
-                    try {
-                        const { data: ownerData } = await supabase.auth.admin.getUserById(agent.user_id);
-                        const meta = ownerData?.user?.user_metadata || {};
-                        const key = meta.openRouterKey || meta.geminiKey || process.env.OPENROUTER_API_KEY;
-                        
-                        if (!key) throw new Error("API_KEY_MISSING");
-
-                        const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
-                        const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 1000 });
-                        aiResponse = completion.choices[0]?.message?.content || "No response.";
-                        success = true; break;
-                    } catch (e) { 
-                        lastError = e; 
-                        if (attempt < 3) await new Promise(r => setTimeout(r, 1000)); 
-                    }
-                }
-
-                if (!success) throw new Error(lastError?.message || "AI Failed");
-
-                // Triggers
-                let newStatus = 'Active';
-                if (aiResponse.includes('[MEETING_BOOKED]')) {
-                    aiResponse = aiResponse.replace('[MEETING_BOOKED]', '').trim();
-                    newStatus = 'Meeting Booked';
-                } else if (aiResponse.includes('[LEAD_QUALIFIED]')) {
-                    aiResponse = aiResponse.replace('[LEAD_QUALIFIED]', '').trim();
-                    newStatus = 'Qualified';
-                }
-
-                await ctx.telegram.editMessageText(chatId, placeholder.message_id, undefined, aiResponse).catch(e => ctx.reply(aiResponse));
-
-                session.history.push({ role: "assistant", content: aiResponse });
-                await supabase.from('chat_sessions').update({ history: session.history, updated_at: new Date().toISOString() }).eq('id', sessionId);
-                
-                agent.messagesSent = (agent.messagesSent || 0) + 1;
-                await updateAgentInDB(agent);
-
-            } catch (err) {
-                console.error(`[Bot Error]:`, err.message);
-                if (placeholder) ctx.telegram.editMessageText(chatId, placeholder.message_id, undefined, "⚠️ System Error. Try again later.").catch(e => {});
-            } finally {
-                processingChats.delete(chatId);
+                    const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
+                    const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 1000 });
+                    aiResponse = completion.choices[0]?.message?.content || "No response.";
+                    success = true; break;
+                } catch (e) { lastError = e; if (attempt < 3) await new Promise(r => setTimeout(r, 1000)); }
             }
-        } catch (globalErr) { console.error('Global Bot Error:', globalErr.message); }
+
+            if (!success) throw new Error(lastError?.message || "AI Service Failed");
+
+            await ctx.telegram.editMessageText(chatId, placeholder.message_id, undefined, aiResponse).catch(async () => {
+                await ctx.reply(aiResponse);
+            });
+
+            session.history.push({ role: "assistant", content: aiResponse });
+            await supabase.from('chat_sessions').update({ history: session.history, updated_at: new Date().toISOString() }).eq('id', sessionId);
+
+            agent.messagesSent = (agent.messagesSent || 0) + 1;
+            await updateAgentInDB(agent);
+            
+        } catch (err) { console.error('Bot Error:', err.message); }
+        finally { processingChats.delete(ctx.chat.id); }
     });
 
     bot.launch({ dropPendingUpdates: true }).catch(e => {});
@@ -321,11 +254,13 @@ app.get('/api/agents', authMiddleware, async (req, res) => {
 // --- ADMIN ROUTES ---
 async function adminMiddleware(req, res, next) {
     await authMiddleware(req, res, () => {
-        if (req.user.email === 'toofiks.fx@gmail.com' || req.user.user_metadata?.is_admin) { next(); } 
+        const adminEmails = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
+        if (adminEmails.includes(req.user.email) || req.user.user_metadata?.is_admin) { next(); } 
         else { res.status(403).json({ error: 'Admin access required' }); }
     });
 }
 
+// Full Admin Only
 async function superAdminMiddleware(req, res, next) {
     await authMiddleware(req, res, () => {
         if (req.user.email === 'toofiks.fx@gmail.com') { next(); } 
@@ -334,45 +269,71 @@ async function superAdminMiddleware(req, res, next) {
 }
 
 app.get('/api/admin/stats', adminMiddleware, async (req, res) => {
-    const { count: ac } = await supabase.from('agents').select('*', { count: 'exact', head: true });
-    const { count: uc } = await supabase.from('bot_users').select('*', { count: 'exact', head: true });
-    const { count: lc } = await supabase.from('leads').select('*', { count: 'exact', head: true });
-    res.json({ agents: ac, users: uc, leads: lc, banned: bannedUsers.length });
+    try {
+        const { count: ac } = await supabase.from('agents').select('*', { count: 'exact', head: true });
+        
+        const { data: usersData, error: uErr } = await supabase.from('bot_users').select('chatId');
+        const uniqueUsersCount = uErr ? 0 : new Set(usersData.map(u => u.chatId.toString())).size;
+
+        const { count: lc } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+        res.json({ agents: ac, users: uniqueUsersCount, leads: lc, banned: bannedUsers.length });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/users', adminMiddleware, async (req, res) => {
-    const { data } = await supabase.from('bot_users').select('*').order('lastActivity', { ascending: false });
-    res.json((data || []).map(u => ({ ...u, isBanned: bannedUsers.includes(u.chatId.toString()) })));
+    try {
+        const { data, error } = await supabase.from('bot_users').select('*').order('lastActivity', { ascending: false });
+        if (error) throw error;
+        res.json((data || []).map(u => ({ ...u, isBanned: bannedUsers.includes(u.chatId.toString()) })));
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/chats', adminMiddleware, async (req, res) => {
-    const { data } = await supabase.from('chat_sessions').select('*').order('updated_at', { ascending: false }).limit(200);
-    res.json(data || []);
+    try {
+        const { data, error } = await supabase.from('chat_sessions').select('*').order('updated_at', { ascending: false }).limit(200);
+        if (error) throw error;
+        res.json(data || []);
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/ban', adminMiddleware, async (req, res) => {
-    const { chatId, action } = req.body;
-    const idStr = chatId.toString();
-    if (action === 'ban') {
-        await supabase.from('global_bans').upsert({ chat_id: idStr });
-        if (!bannedUsers.includes(idStr)) bannedUsers.push(idStr);
-    } else {
-        await supabase.from('global_bans').delete().eq('chat_id', idStr);
-        bannedUsers = bannedUsers.filter(id => id !== idStr);
-    }
-    res.json({ success: true });
+    try {
+        const { chatId, action } = req.body;
+        const idStr = chatId.toString();
+        if (action === 'ban') {
+            await supabase.from('global_bans').upsert({ chat_id: idStr });
+            if (!bannedUsers.includes(idStr)) bannedUsers.push(idStr);
+        } else {
+            await supabase.from('global_bans').delete().eq('chat_id', idStr);
+            bannedUsers = bannedUsers.filter(id => id !== idStr);
+        }
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/system-users', superAdminMiddleware, async (req, res) => {
-    const { data: { users }, error } = await supabase.auth.admin.listUsers();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(users.map(u => ({ id: u.id, email: u.email, isAdmin: !!u.user_metadata?.is_admin })));
+    try {
+        const { data: { users }, error } = await supabase.auth.admin.listUsers();
+        if (error) throw error;
+        res.json(users.map(u => ({ id: u.id, email: u.email, isAdmin: !!u.user_metadata?.is_admin })));
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/set-privileges', superAdminMiddleware, async (req, res) => {
-    const { userId, isAdmin } = req.body;
-    await supabase.auth.admin.updateUserById(userId, { user_metadata: { is_admin: isAdmin } });
-    res.json({ success: true });
+    try {
+        const { userId, isAdmin } = req.body;
+        const { error } = await supabase.auth.admin.updateUserById(userId, { user_metadata: { is_admin: isAdmin } });
+        if (error) throw error;
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/chats/:id', adminMiddleware, async (req, res) => {
+    try {
+        await supabase.from('chat_sessions').delete().eq('id', req.params.id);
+        await supabase.from('leads').delete().eq('id', req.params.id);
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 const PORT = process.env.PORT || 3000;
