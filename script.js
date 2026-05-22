@@ -2465,9 +2465,16 @@ function renderAdminChats() {
     }
 
     adminChatsTable.innerHTML = adminChats.map(session => {
-        const lastMsg = session.history && session.history.length > 0 
-            ? session.history[session.history.length-1].content.substring(0, 60) + '...'
-            : 'No history';
+        let lastMsg = 'No history';
+        if (session.history && session.history.length > 0) {
+            const content = session.history[session.history.length-1].content;
+            if (typeof content === 'string') {
+                lastMsg = content.substring(0, 60) + '...';
+            } else {
+                lastMsg = '[Media/Vision Object]';
+            }
+        }
+        
         const d = new Date(session.updated_at).toLocaleString();
 
         return `
