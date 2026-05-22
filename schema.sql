@@ -123,6 +123,16 @@ CREATE POLICY "Owners can manage team members"
 CREATE POLICY "Managers can view assignments"
     ON public.agent_managers FOR SELECT
     USING ( email = (SELECT email FROM auth.users WHERE auth.users.id = auth.uid()) );
+
+-- Create global bans table
+CREATE TABLE public.global_bans (
+    chat_id TEXT PRIMARY KEY,
+    banned_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Add IP Address column to bot_users if missing
+ALTER TABLE public.bot_users ADD COLUMN IF NOT EXISTS ip_address TEXT;
+
 -- Enable vector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
