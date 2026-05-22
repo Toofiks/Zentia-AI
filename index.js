@@ -24,6 +24,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
+const upload = multer({ dest: 'uploads/' });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const openai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: process.env.OPENROUTER_API_KEY || 'dummy' });
 const agents = new Map(); 
@@ -126,10 +127,7 @@ app.get('/api/leads', authMiddleware, async (req, res) => {
     try {
         const admins = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
         let query = supabase.from('leads').select('*');
-        
-        // Default Inbox: ONLY Qualified/Meeting Booked
         query = query.or('status.eq.Qualified,status.eq.Meeting Booked');
-
         if (!admins.includes(req.user.email) && !req.user.user_metadata?.is_admin) {
             query = query.eq('user_id', req.user.id);
         }
@@ -181,41 +179,41 @@ app.put('/api/leads/:chatId/ai-toggle', authMiddleware, async (req, res) => {
     const { data: lead } = await supabase.from('leads').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
     if (lead) {
         const history = [...(lead.history || []), { role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' }];
-        await supabase.from('leads').update({ history }).eq('id', lead.id);
+        await supabase.from('leads').update({ history }).eq('chatId', chatId).eq('agentId', agentId);
     }
     const { data: sess } = await supabase.from('chat_sessions').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
     if (sess) {
         const history = [...(sess.history || []), { role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' }];
-        await supabase.from('chat_sessions').update({ history }).eq('id', sess.id);
+        await supabase.from('chat_sessions').update({ history }).eq('chatId', chatId).eq('agentId', agentId);
     }
     res.json({ success: true });
 });
 
 // Managers & KB
 app.get('/api/agents/:id/managers', authMiddleware, async (req, res) => {
-    if (!await checkAccess(req, req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+    if (!await checkAccess(req, req.params.id)) return res.status(403).send('Forbidden');
     const { data } = await supabase.from('agent_managers').select('*').eq('agentId', req.params.id);
     res.json(data || []);
 });
 app.post('/api/agents/:id/managers', authMiddleware, async (req, res) => {
-    if (!await checkAccess(req, req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+    if (!await checkAccess(req, req.params.id)) return res.status(403).send('Forbidden');
     await supabase.from('agent_managers').insert({ agentId: req.params.id, email: req.body.email });
     res.json({ success: true });
 });
 app.delete('/api/agents/:agentId/managers/:id', authMiddleware, async (req, res) => {
-    if (!await checkAccess(req, req.params.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    if (!await checkAccess(req, req.params.agentId)) return res.status(403).send('Forbidden');
     await supabase.from('agent_managers').delete().eq('id', req.params.id);
     res.json({ success: true });
 });
 
 app.get('/api/knowledge/:agentId', authMiddleware, async (req, res) => {
-    if (!await checkAccess(req, req.params.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    if (!await checkAccess(req, req.params.agentId)) return res.status(403).send('Forbidden');
     const { data } = await supabase.from('knowledge_base').select('id, filename, uploaded_at').eq('agentId', req.params.agentId);
     res.json(data || []);
 });
 app.post('/api/knowledge/:agentId', authMiddleware, upload.single('file'), async (req, res) => {
-    if (!await checkAccess(req, req.params.agentId)) return res.status(403).json({ error: 'Forbidden' });
-    const file = req.file; if (!file) return res.status(400).json({ error: 'No file' });
+    if (!await checkAccess(req, req.params.agentId)) return res.status(403).send('Forbidden');
+    const file = req.file; if (!file) return res.status(400).send('No file');
     try {
         let content = '';
         if (file.mimetype === 'application/pdf') {
@@ -229,7 +227,7 @@ app.post('/api/knowledge/:agentId', authMiddleware, upload.single('file'), async
 });
 app.delete('/api/knowledge/:id', authMiddleware, async (req, res) => {
     const { data: kb } = await supabase.from('knowledge_base').select('agentId').eq('id', req.params.id).single();
-    if (!kb || !await checkAccess(req, kb.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    if (!kb || !await checkAccess(req, kb.agentId)) return res.status(403).send('Forbidden');
     await supabase.from('knowledge_base').delete().eq('id', req.params.id);
     res.json({ success: true });
 });
