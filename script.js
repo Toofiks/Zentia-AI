@@ -558,7 +558,8 @@ function renderUsersTable() {
 // Inbox Functionality
 let selectedLeadId = null;
 
-const inboxSendBtn = document.querySelector('.inbox-input button');
+const inboxSendBtn = document.getElementById('inbox-send-btn');
+const aiSuggestBtn = document.getElementById('ai-suggest-btn');
 const inboxInputField = document.querySelector('.inbox-input input');
 
 if (inboxSendBtn && inboxInputField) {
@@ -589,9 +590,44 @@ if (inboxSendBtn && inboxInputField) {
     };
 }
 
+if (aiSuggestBtn && inboxInputField) {
+    aiSuggestBtn.onclick = async () => {
+        if (!selectedLeadId) return;
+        const lead = leads.find(l => l.chatId === selectedLeadId);
+        if (!lead) return;
+
+        const originalText = aiSuggestBtn.innerHTML;
+        aiSuggestBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60"></circle></svg>';
+        aiSuggestBtn.disabled = true;
+
+        try {
+            const res = await authenticatedFetch(`/api/leads/${selectedLeadId}/suggest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agentId: lead.agentId })
+            });
+
+            if (res.ok) {
+                const data = await safeJson(res);
+                if (data.suggestion) {
+                    inboxInputField.value = data.suggestion;
+                }
+            } else {
+                showToast('Failed to generate suggestion.', 'error');
+            }
+        } catch (e) {
+            console.error('Failed to get suggestion:', e);
+            showToast('Error getting AI suggestion.', 'error');
+        } finally {
+            aiSuggestBtn.innerHTML = originalText;
+            aiSuggestBtn.disabled = false;
+        }
+    };
+}
+
 window.sendQuickReply = async (msg) => {
     const inboxInputField = document.querySelector('.inbox-input input');
-    const inboxSendBtn = document.querySelector('.inbox-input button');
+    const inboxSendBtn = document.getElementById('inbox-send-btn');
     if (inboxInputField && inboxSendBtn) {
         inboxInputField.value = msg;
         inboxSendBtn.click();

@@ -110,6 +110,32 @@ function startBot(agent) {
 
             if (status) {
                 await supabase.from('leads').upsert({ chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, history, status, lastMessage: aiResponse, timestamp: new Date().toISOString(), user_id: agent.user_id }, { onConflict: 'chatId, agentId' });
+                
+                // Trigger Webhook if configured
+                if (agent.analytics && agent.analytics.webhookUrl) {
+                    try {
+                        const payload = {
+                            event: 'lead_status_changed',
+                            agent_id: agent.id,
+                            agent_name: agent.name,
+                            lead: {
+                                chat_id: chatId,
+                                username: ctx.from.username || 'Anon',
+                                status: status,
+                                last_message: aiResponse,
+                                history: history
+                            },
+                            timestamp: new Date().toISOString()
+                        };
+                        fetch(agent.analytics.webhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        }).catch(err => console.error(`[Webhook] Failed to send to ${agent.analytics.webhookUrl}:`, err.message));
+                    } catch(e) {
+                        console.error('[Webhook] Exception:', e.message);
+                    }
+                }
             }
         } catch (e) { console.error('Bot Error:', e); } 
         finally { processingChats.delete(chatId); }
@@ -177,9 +203,10 @@ app.get('/api/agents', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/agents', authMiddleware, async (req, res) => {
-    const { id, name, token, model, prompt } = req.body;
+    const { id, name, token, model, prompt, payment, webhookUrl, googleSheetsUrl, removeBranding, calendarUrl } = req.body;
     const agentId = id || 'agent_' + Date.now();
-    const newAgent = { id: agentId, name, token, model, prompt, isActive: true, user_id: req.user.id };
+    const analytics = { webhookUrl, googleSheetsUrl, removeBranding, calendarUrl };
+    const newAgent = { id: agentId, name, token, model, prompt, payment, analytics, isActive: true, user_id: req.user.id };
     await supabase.from('agents').insert(newAgent);
     agents.set(agentId, newAgent);
     startBot(newAgent);
@@ -187,20 +214,20 @@ app.post('/api/agents', authMiddleware, async (req, res) => {
 });
 
 app.put('/api/agents/:id', authMiddleware, async (req, res) => {
-    if (!await checkAccess(req, req.params.id)) return res.status(403).send('Forbidden');
-    const { name, model, prompt, isActive } = req.body;
+    if (!await checkAccess(req, req.params.id)) return res.status(403).send('Forbidden');    
+    const { name, model, prompt, payment, webhookUrl, googleSheetsUrl, removeBranding, calendarUrl, isActive } = req.body;
     const agent = agents.get(req.params.id);
     if (agent) {
-        Object.assign(agent, { name, model, prompt });
+        const analytics = { ...agent.analytics, webhookUrl, googleSheetsUrl, removeBranding, calendarUrl };
+        Object.assign(agent, { name, model, prompt, payment, analytics });
         if (isActive !== undefined) {
             agent.isActive = isActive;
             if (isActive) startBot(agent); else agent.botInstance?.stop();
         }
-        await supabase.from('agents').update({ name, model, prompt, isActive: agent.isActive }).eq('id', req.params.id);
+        await supabase.from('agents').update({ name, model, prompt, payment, analytics, isActive: agent.isActive }).eq('id', req.params.id);
     }
     res.json({ success: true });
 });
-
 app.delete('/api/agents/:id', authMiddleware, async (req, res) => {
     const agent = agents.get(req.params.id);
     if (agent && agent.user_id === req.user.id) {
@@ -232,6 +259,30 @@ app.post('/api/leads/:chatId/message', authMiddleware, async (req, res) => {
         }
 
         res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/leads/:chatId/suggest', authMiddleware, async (req, res) => {
+    if (!await checkAccess(req, req.body.agentId)) return res.status(403).json({ error: 'Forbidden' });
+    const agent = agents.get(req.body.agentId);
+    if (!agent) return res.status(404).json({ error: 'Agent not found' });
+    try {
+        const { data: lead } = await supabase.from('leads').select('history').eq('chatId', req.params.chatId).eq('agentId', req.body.agentId).single();
+        if (!lead || !lead.history) return res.status(400).json({ error: 'No history found' });
+
+        const history = lead.history.filter(m => m.role !== 'system');
+        const messages = [
+            { role: "system", content: `${agent.prompt}\n\nINSTRUCTION FOR THIS REQUEST: You are an AI assistant helping a human sales representative. Review the following conversation history and generate ONE short, highly effective, and natural-sounding response that the human representative should send next. ONLY output the suggested message text, with no surrounding quotes or explanations.` },
+            ...history
+        ];
+
+        const { data: owner } = await supabase.auth.admin.getUserById(agent.user_id);
+        const key = owner?.user?.user_metadata?.openRouterKey || process.env.OPENROUTER_API_KEY;
+        const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
+        const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 200 });
+        
+        const suggestion = completion.choices[0]?.message?.content || "Could not generate suggestion.";
+        res.json({ success: true, suggestion });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
