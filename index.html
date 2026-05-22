@@ -408,6 +408,7 @@
                 <a href="#" class="nav-view-btn" data-view="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Users</a>
                 <a href="#" class="nav-view-btn" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Inbox</a>
                 <a href="#" class="nav-view-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Settings</a>
+                <a href="#" class="nav-view-btn admin-only" data-view="admin" style="display: none; color: #ef4444; font-weight: 700;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Admin Control</a>
             </nav>
         </aside>
 
@@ -735,6 +736,123 @@
                             </div>
                             <button type="submit" class="btn btn-secondary" style="margin-top: 1rem; width: 100%;">Save API Keys</button>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin View -->
+            <div id="view-admin" class="dashboard-view">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+                    <div>
+                        <h2 style="font-size: 1.75rem; color: #ef4444; margin-bottom: 0.25rem;">Global Admin Control</h2>
+                        <p style="color: var(--fg-muted);">Monitoring all Zentia infrastructure and content</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-secondary admin-refresh-btn">Refresh Data</button>
+                    </div>
+                </div>
+
+                <div class="stat-group" style="margin-bottom: 2rem;">
+                    <div class="stat dash-card">
+                        <span class="label">Total Agents</span>
+                        <span class="value" id="admin-stat-agents">0</span>
+                    </div>
+                    <div class="stat dash-card">
+                        <span class="label">Bot Users</span>
+                        <span class="value" id="admin-stat-users">0</span>
+                    </div>
+                    <div class="stat dash-card">
+                        <span class="label">Leads Captured</span>
+                        <span class="value" id="admin-stat-leads">0</span>
+                    </div>
+                    <div class="stat dash-card">
+                        <span class="label">Banned Users</span>
+                        <span class="value" id="admin-stat-banned">0</span>
+                    </div>
+                </div>
+
+                <div class="dash-card full-width">
+                    <div class="tabs" style="display: flex; gap: 2rem; border-bottom: 1px solid var(--border-subtle); margin-bottom: 1.5rem;">
+                        <a href="#" class="admin-tab active" data-tab="monitoring">Live Monitoring</a>
+                        <a href="#" class="admin-tab" data-tab="users">Bot Users</a>
+                        <a href="#" class="admin-tab" data-tab="system-users" id="admin-tab-sys" style="display: none;">System Access</a>
+                        <a href="#" class="admin-tab" data-tab="agents">All Agents</a>
+                    </div>
+
+                    <div id="admin-monitoring" class="admin-tab-content">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Lead ID</th>
+                                        <th>Agent</th>
+                                        <th>Last Message</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-chats-table">
+                                    <tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading global sessions...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="admin-users" class="admin-tab-content" style="display: none;">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Chat ID</th>
+                                        <th>IP Address</th>
+                                        <th>Activity</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-table">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="admin-system-users" class="admin-tab-content" style="display: none;">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>User ID</th>
+                                        <th>Privileges</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-system-users-table">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="admin-agents" class="admin-tab-content" style="display: none;">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Agent Name</th>
+                                        <th>Owner ID</th>
+                                        <th>Tokens Used</th>
+                                        <th>Msgs</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-agents-table">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1138,6 +1256,30 @@
         </div>
     </div>
     
+    <!-- Admin Chat Viewer Modal -->
+    <div id="admin-chat-modal" class="modal">
+        <div class="modal-backdrop" id="admin-chat-backdrop"></div>
+        <div class="modal-content" style="max-width: 600px; height: 80vh; display: flex; flex-direction: column; padding: 0;">
+            <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 id="admin-chat-title" style="margin: 0; font-size: 1.1rem;">Chat History</h3>
+                    <p id="admin-chat-subtitle" style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: var(--fg-muted);"></p>
+                </div>
+                <button class="modal-close" id="close-admin-chat" style="position: static; padding: 0.4rem;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div id="admin-chat-log" style="flex-grow: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; background: #fdfdfd;">
+                <!-- Messages populated by JS -->
+            </div>
+            <div class="modal-footer" style="padding: 1rem; border-top: 1px solid var(--border-subtle); background: var(--bg-secondary); display: flex; justify-content: space-between; align-items: center;">
+                <div id="admin-chat-meta" style="font-size: 0.7rem; color: var(--fg-light); font-family: monospace;"></div>
+                <a id="admin-chat-tg-link" href="#" target="_blank" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; gap: 0.4rem;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+                    Open Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

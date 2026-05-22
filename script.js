@@ -1930,9 +1930,29 @@ function updateAuthUI(user) {
         if (settingsUpgradeBtn) {
             settingsUpgradeBtn.style.display = (plan === 'pro' || plan === 'enterprise') ? 'none' : 'flex';
         }
-        
+
         const entFeatures = document.getElementById('enterprise-features');
         if (entFeatures) entFeatures.style.display = plan === 'enterprise' ? 'block' : 'none';
+
+        // Admin Panel Visibility
+        const adminBtn = document.querySelector('.nav-view-btn.admin-only');
+        if (adminBtn) {
+            if (user.email === 'toofiks.fx@gmail.com' || user.user_metadata?.is_admin) {
+                adminBtn.style.display = 'flex';
+            } else {
+                adminBtn.style.display = 'none';
+            }
+        }
+
+        if (user.user_metadata?.openRouterKey) {
+        const adminBtn = document.querySelector('.nav-view-btn.admin-only');
+        if (adminBtn) {
+            if (user.email === 'toofiks.fx@gmail.com' || user.user_metadata?.is_admin) {
+                adminBtn.style.display = 'flex';
+            } else {
+                adminBtn.style.display = 'none';
+            }
+        }
 
         // Hide pro banner on dashboard if pro or enterprise
         const dashboardProBanner = document.getElementById('dashboard-pro-banner');
@@ -2290,7 +2310,301 @@ document.getElementById('export-csv-btn')?.addEventListener('click', () => {
     showToast('Leads with history exported!', 'success');
 });
 
-// Individual Chat TXT Export
+// --- ADMIN PANEL LOGIC ---
+const adminTabBtns = document.querySelectorAll('.admin-tab');
+const adminTabContents = document.querySelectorAll('.admin-tab-content');
+const adminChatsTable = document.getElementById('admin-chats-table');
+const adminUsersTable = document.getElementById('admin-users-table');
+const adminAgentsTable = document.getElementById('admin-agents-table');
+
+let adminStats = {};
+let adminChats = [];
+let adminUsers = [];
+let adminAgents = [];
+let systemUsers = [];
+
+adminTabBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = btn.getAttribute('data-tab');
+        adminTabBtns.forEach(b => b.classList.remove('active'));
+        adminTabContents.forEach(c => c.style.display = 'none');
+        btn.classList.add('active');
+        const content = document.getElementById(`admin-${target}`);
+        if (content) content.style.display = 'block';
+        if (target === 'system-users') fetchSystemUsers();
+    });
+});
+
+async function fetchAdminData() {
+    if (!currentUser || (currentUser.email !== 'toofiks.fx@gmail.com' && !currentUser.user_metadata?.is_admin)) return;
+
+    // Show system tab only for root admin
+    const sysTab = document.getElementById('admin-tab-sys');
+    if (sysTab) sysTab.style.display = currentUser.email === 'toofiks.fx@gmail.com' ? 'block' : 'none';
+
+    try {
+        const [statsRes, chatsRes, usersRes, agentsRes] = await Promise.all([
+            authenticatedFetch('/api/admin/stats'),
+            authenticatedFetch('/api/admin/chats'),
+            authenticatedFetch('/api/admin/users'),
+            authenticatedFetch('/api/admin/agents')
+        ]);
+
+        if (statsRes.ok) {
+            adminStats = await statsRes.json();
+            document.getElementById('admin-stat-agents').textContent = adminStats.agents || 0;
+            document.getElementById('admin-stat-users').textContent = adminStats.users || 0;
+            document.getElementById('admin-stat-leads').textContent = adminStats.leads || 0;
+            document.getElementById('admin-stat-banned').textContent = adminStats.banned || 0;
+        }
+
+        if (chatsRes.ok) {
+            adminChats = await chatsRes.json();
+            renderAdminChats();
+        }
+
+        if (usersRes.ok) {
+            adminUsers = await usersRes.json();
+            renderAdminUsers();
+        }
+
+        if (agentsRes.ok) {
+            adminAgents = await agentsRes.json();
+            renderAdminAgents();
+        }
+    } catch(e) {
+        console.error('Admin fetch error:', e);
+    }
+}
+
+async function fetchSystemUsers() {
+    if (currentUser?.email !== 'toofiks.fx@gmail.com') return;
+    try {
+        const res = await authenticatedFetch('/api/admin/system-users');
+        if (res.ok) {
+            systemUsers = await res.json();
+            renderSystemUsers();
+        }
+    } catch(e) { console.error('Sys users fetch error:', e); }
+}
+
+function renderSystemUsers() {
+    if (!adminSysUsersTable) return;
+    adminSysUsersTable.innerHTML = systemUsers.map(user => {
+        if (user.email === 'toofiks.fx@gmail.com') return ''; // Don't show self
+        const status = user.isAdmin ? '<span class="status-badge success">ADMIN</span>' : '<span class="status-badge neutral">USER</span>';
+        const actionBtn = user.isAdmin 
+            ? `<button class="btn btn-secondary" onclick="setPrivileges('${user.id}', false)" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; color: #ef4444;">Revoke Admin</button>`
+            : `<button class="btn btn-primary" onclick="setPrivileges('${user.id}', true)" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; background: #8b5cf6;">Grant Admin</button>`;
+            
+        return `
+            <tr>
+                <td><strong>${user.email}</strong></td>
+                <td><code>${user.id}</code></td>
+                <td>${status}</td>
+                <td>${actionBtn}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.setPrivileges = async (userId, isAdmin) => {
+    const res = await authenticatedFetch('/api/admin/set-privileges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, isAdmin })
+    });
+    if (res.ok) {
+        showToast(`Privileges updated.`);
+        fetchSystemUsers();
+    }
+};
+
+function renderAdminChats() {
+    if (!adminChatsTable) return;
+    if (adminChats.length === 0) {
+        adminChatsTable.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No active chat sessions.</td></tr>';
+        return;
+    }
+
+    adminChatsTable.innerHTML = adminChats.map(session => {
+        const lastMsg = session.history && session.history.length > 0 
+            ? session.history[session.history.length-1].content.substring(0, 60) + '...'
+            : 'No history';
+        const d = new Date(session.updated_at).toLocaleString();
+
+        return `
+            <tr style="cursor: pointer;" onclick="viewChatHistoryAdmin('${session.id}')">
+                <td style="font-size: 0.75rem;">${d}</td>
+                <td><code>${session.chatId}</code></td>
+                <td>${session.agentId}</td>
+                <td style="font-size: 0.8rem; color: var(--fg-muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lastMsg}</td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem;" onclick="event.stopPropagation()">
+                         <button class="btn btn-secondary" onclick="viewChatHistoryAdmin('${session.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; color: var(--fg-main);">View</button>
+                         <button class="btn btn-secondary" onclick="deleteChatAdmin('${session.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; color: #ef4444;">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderAdminUsers() {
+    if (!adminUsersTable) return;
+    adminUsersTable.innerHTML = adminUsers.map(user => {
+        const d = new Date(user.lastActivity).toLocaleString();
+        const banBtn = user.isBanned 
+            ? `<button class="btn btn-primary" onclick="toggleBan('${user.chatId}', 'unban')" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; background: #10b981; border-color: #10b981;">Unban</button>`
+            : `<button class="btn btn-secondary" onclick="toggleBan('${user.chatId}', 'ban')" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; color: #ef4444;">Ban User</button>`;
+        
+        const tgLink = user.username && user.username !== 'Anonymous' 
+            ? `<a href="https://t.me/${user.username.replace('@', '')}" target="_blank" style="color: #0088cc; font-weight: 700; text-decoration: underline;">@${user.username.replace('@','')}</a>`
+            : `<span style="color: var(--fg-light);">No handle</span>`;
+
+        return `
+            <tr>
+                <td><strong>${user.username}</strong><br>${tgLink}</td>
+                <td><code>${user.chatId}</code></td>
+                <td><code>${user.ip_address || 'Telegram'}</code></td>
+                <td style="font-size: 0.75rem;">${d}</td>
+                <td><span class="status-badge ${user.isBanned ? 'error' : 'success'}">${user.isBanned ? 'BANNED' : 'Active'}</span></td>
+                <td>${banBtn}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// --- ADMIN CHAT VIEWER MODAL LOGIC ---
+const adminChatModal = document.getElementById('admin-chat-modal');
+const adminChatLog = document.getElementById('admin-chat-log');
+const adminChatTitle = document.getElementById('admin-chat-title');
+const adminChatSubtitle = document.getElementById('admin-chat-subtitle');
+const adminChatMeta = document.getElementById('admin-chat-meta');
+const adminChatTgLink = document.getElementById('admin-chat-tg-link');
+
+window.viewChatHistoryAdmin = (sessionId) => {
+    const session = adminChats.find(s => s.id === sessionId);
+    if (!session) return;
+    
+    // Try to find user info to enrich title
+    const user = adminUsers.find(u => u.chatId.toString() === session.chatId.toString());
+    const displayName = user ? `@${user.username}` : `Chat ID: ${session.chatId}`;
+    
+    adminChatTitle.textContent = `Dialogue with ${displayName}`;
+    adminChatSubtitle.textContent = `Agent ID: ${session.agentId} • Updated: ${new Date(session.updated_at).toLocaleString()}`;
+    adminChatMeta.textContent = `SESS_ID: ${session.id} | TG_ID: ${session.chatId}`;
+    
+    if (user && user.username && user.username !== 'Anonymous') {
+        adminChatTgLink.href = `https://t.me/${user.username.replace('@', '')}`;
+        adminChatTgLink.style.display = 'flex';
+    } else {
+        adminChatTgLink.style.display = 'none';
+    }
+    
+    // Render History
+    adminChatLog.innerHTML = '';
+    if (!session.history || session.history.length === 0) {
+        adminChatLog.innerHTML = '<div style="text-align: center; color: var(--fg-muted); padding: 2rem;">No message history found.</div>';
+    } else {
+        session.history.forEach(msg => {
+            if (msg.role === 'system') {
+                const sysTag = document.createElement('div');
+                sysTag.style.cssText = 'align-self: center; font-size: 0.65rem; color: var(--fg-light); background: var(--bg-tertiary); padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 700;';
+                sysTag.textContent = msg.content;
+                adminChatLog.appendChild(sysTag);
+                return;
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${msg.role === 'assistant' ? 'bot' : 'user'}`;
+            bubble.style.cssText = 'max-width: 85%; animation: none; opacity: 1; transform: none; font-size: 0.85rem; padding: 0.75rem 1rem;';
+            
+            let content = msg.content;
+            if (typeof content !== 'string') content = JSON.stringify(content);
+            
+            if (msg.role === 'assistant') {
+                bubble.innerHTML = `<span class="cemoji"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5Z"></path></svg></span>${content}`;
+            } else {
+                bubble.innerHTML = content;
+            }
+            adminChatLog.appendChild(bubble);
+        });
+    }
+    
+    adminChatModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Scroll to bottom
+    setTimeout(() => {
+        adminChatLog.scrollTop = adminChatLog.scrollHeight;
+    }, 50);
+};
+
+document.getElementById('close-admin-chat')?.addEventListener('click', () => {
+    adminChatModal.classList.remove('active');
+    document.body.style.overflow = '';
+});
+document.getElementById('admin-chat-backdrop')?.addEventListener('click', () => {
+    adminChatModal.classList.remove('active');
+    document.body.style.overflow = '';
+});
+
+function renderAdminAgents() {
+    if (!adminAgentsTable) return;
+    adminAgentsTable.innerHTML = adminAgents.map(agent => `
+        <tr>
+            <td><strong>${agent.name}</strong></td>
+            <td style="font-size: 0.7rem; color: var(--fg-light);"><code>${agent.user_id}</code></td>
+            <td>${agent.tokensUsed || 0}</td>
+            <td>${agent.messagesSent || 0}</td>
+            <td><span class="status-badge ${agent.isActive ? 'success' : 'neutral'}">${agent.isActive ? 'Active' : 'Offline'}</span></td>
+        </tr>
+    `).join('');
+}
+
+window.toggleBan = async (chatId, action) => {
+    if (action === 'ban') {
+        const confirmed = await showConfirm('Ban User?', `Are you sure you want to GLOBALLY ban user ${chatId}? They will be blocked from all Zentia bots.`, 'Ban', true);
+        if (!confirmed) return;
+    }
+
+    try {
+        const res = await authenticatedFetch('/api/admin/ban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, action })
+        });
+        if (res.ok) {
+            showToast(`User has been ${action === 'ban' ? 'banned' : 'unbanned'}.`);
+            fetchAdminData();
+        }
+    } catch(e) { showToast('Ban failed', 'error'); }
+};
+
+window.deleteChatAdmin = async (id) => {
+    const confirmed = await showConfirm('Delete Content?', 'This will permanently remove this session/lead data from the system.', 'Delete');
+    if (!confirmed) return;
+
+    try {
+        const res = await authenticatedFetch(`/api/admin/chats/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('Deleted successfully');
+            fetchAdminData();
+        }
+    } catch(e) { showToast('Delete failed', 'error'); }
+};
+
+document.querySelector('.admin-refresh-btn')?.addEventListener('click', fetchAdminData);
+
+// Update nav click to include admin fetch
+document.querySelector('.nav-view-btn[data-view="admin"]')?.addEventListener('click', () => {
+    fetchAdminData();
+});
+// --- END ADMIN PANEL LOGIC ---
+
+// --- Individual Chat TXT Export ---
 document.getElementById('export-chat-txt-btn')?.addEventListener('click', () => {
     if (!selectedLeadId) return;
     const lead = leads.find(l => l.chatId === selectedLeadId);

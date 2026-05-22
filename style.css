@@ -2407,4 +2407,71 @@ p {
   }
 }
 
+/* --- Admin Panel --- */
+#view-admin {
+    display: none;
+}
+#view-admin.active {
+    display: block;
+}
+
+.admin-tab {
+    padding: 0.75rem 0;
+    color: var(--fg-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+.admin-tab:hover {
+    color: var(--fg-main);
+}
+.admin-tab.active {
+    color: #ef4444;
+    border-bottom-color: #ef4444;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table th {
+    text-align: left;
+    padding: 1rem;
+    color: var(--fg-light);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.status-badge.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.admin-only {
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 1rem !important;
+    padding-top: 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+    .admin-tab {
+        font-size: 0.85rem;
+        gap: 1rem;
+    }
+}
+/* --- End Admin Panel --- */
+
 
