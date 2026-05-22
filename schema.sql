@@ -123,3 +123,47 @@ CREATE POLICY "Owners can manage team members"
 CREATE POLICY "Managers can view assignments"
     ON public.agent_managers FOR SELECT
     USING ( email = (SELECT email FROM auth.users WHERE auth.users.id = auth.uid()) );
+-- Enable vector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create a table for chunks
+CREATE TABLE public.knowledge_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "agentId" TEXT REFERENCES public.agents(id) ON DELETE CASCADE,
+    document_id UUID REFERENCES public.knowledge_base(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    embedding vector(768),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+ALTER TABLE public.knowledge_chunks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage KB chunks for their agents"
+    ON public.knowledge_chunks
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- Create a function to search chunks
+CREATE OR REPLACE FUNCTION match_knowledge (
+  query_embedding vector(768),
+  match_threshold float,
+  match_count int,
+  p_agent_id text
+)
+RETURNS TABLE (
+  id uuid,
+  content text,
+  similarity float
+)
+LANGUAGE sql STABLE
+AS $$
+  SELECT
+    knowledge_chunks.id,
+    knowledge_chunks.content,
+    1 - (knowledge_chunks.embedding <=> query_embedding) AS similarity
+  FROM knowledge_chunks
+  WHERE knowledge_chunks."agentId" = p_agent_id
+    AND 1 - (knowledge_chunks.embedding <=> query_embedding) > match_threshold
+  ORDER BY knowledge_chunks.embedding <=> query_embedding
+  LIMIT match_count;
+$$;

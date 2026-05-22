@@ -1,6 +1,7 @@
 import express from 'express';
 import { Telegraf } from 'telegraf';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
@@ -30,6 +31,16 @@ const openai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: pro
 const agents = new Map(); 
 const processingChats = new Set();
 let bannedUsers = [];
+
+function chunkText(text, chunkSize = 1000, overlap = 200) {
+    const chunks = [];
+    let i = 0;
+    while (i < text.length) {
+        chunks.push(text.slice(i, i + chunkSize));
+        i += chunkSize - overlap;
+    }
+    return chunks;
+}
 
 async function loadGlobalBans() {
     try {
