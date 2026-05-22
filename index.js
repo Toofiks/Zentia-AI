@@ -89,10 +89,50 @@ async function loadAgentsFromDB() {
 
 // --- API ---
 app.get('/api/leads', authMiddleware, async (req, res) => {
-    const admins = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
-    let query = supabase.from('leads').select('*');
-    if (!admins.includes(req.user.email) && !req.user.user_metadata?.is_admin) query = query.eq('user_id', req.user.id);
-    const { data } = await query; res.json(data || []);
+    try {
+        const admins = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
+        let query = supabase.from('leads').select('*');
+        
+        if (!admins.includes(req.user.email) && !req.user.user_metadata?.is_admin) {
+            // Regular users: Only show Qualified or Meeting Booked leads in their Inbox
+            // and only for their own agents
+            const { data: owned } = await supabase.from('agents').select('id').eq('user_id', req.user.id);
+            const { data: managed } = await supabase.from('agent_managers').select('agentId').eq('email', req.user.email);
+            const ids = [...(owned||[]).map(a=>a.id), ...(managed||[]).map(m=>m.agentId)];
+            
+            if (ids.length === 0) return res.json([]);
+            query = query.in('agentId', ids).or('status.eq.Qualified,status.eq.Meeting Booked');
+        }
+        
+        const { data } = await query.order('timestamp', { ascending: false });
+        res.json(data || []);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/leads/:chatId/ai-toggle', authMiddleware, async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const { agentId, aiDisabled } = req.body;
+        
+        if (!await checkAccess(req, agentId)) return res.status(403).json({ error: 'Forbidden' });
+
+        const { data: lead } = await supabase.from('leads').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
+        if (lead) {
+            const history = lead.history || [];
+            history.push({ role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' });
+            await supabase.from('leads').update({ history }).eq('id', lead.id);
+        }
+        
+        // Also update chat_sessions if it exists
+        const { data: sess } = await supabase.from('chat_sessions').select('id, history').eq('chatId', chatId).eq('agentId', agentId).single();
+        if (sess) {
+            const history = sess.history || [];
+            history.push({ role: 'system', content: aiDisabled ? '[AI_DISABLED]' : '[AI_ENABLED]' });
+            await supabase.from('chat_sessions').update({ history }).eq('id', sess.id);
+        }
+
+        res.json({ success: true, aiDisabled });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/users', authMiddleware, async (req, res) => {

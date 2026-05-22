@@ -1934,11 +1934,20 @@ function updateAuthUI(user) {
         const entFeatures = document.getElementById('enterprise-features');
         if (entFeatures) entFeatures.style.display = plan === 'enterprise' ? 'block' : 'none';
 
-        // Admin Panel Visibility
+        // Admin Panel Visibility & Dynamic Styling
         const adminBtn = document.querySelector('.nav-view-btn.admin-only');
         if (adminBtn) {
-            if (user.email === 'toofiks.fx@gmail.com' || user.user_metadata?.is_admin) {
+            const adminEmails = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
+            if (adminEmails.includes(user.email) || user.user_metadata?.is_admin) {
                 adminBtn.style.display = 'flex';
+                // Dynamic Color
+                if (user.email === 'toofiks.fx@gmail.com') {
+                    adminBtn.style.color = '#ef4444'; // Red
+                } else if (user.email === 'emofitz@gmail.com') {
+                    adminBtn.style.color = '#8b5cf6'; // Purple
+                } else {
+                    adminBtn.style.color = '#8b5cf6'; // Default Purple for other staff
+                }
             } else {
                 adminBtn.style.display = 'none';
             }
@@ -2357,13 +2366,15 @@ adminTabBtns.forEach(btn => {
 });
 
 async function fetchAdminData() {
-    if (!currentUser || (currentUser.email !== 'toofiks.fx@gmail.com' && !currentUser.user_metadata?.is_admin)) return;
+    const adminEmails = ['toofiks.fx@gmail.com', 'emofitz@gmail.com'];
+    if (!currentUser || (!adminEmails.includes(currentUser.email) && !currentUser.user_metadata?.is_admin)) return;
 
     // Show system tab only for root admin
     const sysTab = document.getElementById('admin-tab-sys');
     if (sysTab) sysTab.style.display = currentUser.email === 'toofiks.fx@gmail.com' ? 'block' : 'none';
 
     try {
+        console.log('[Admin] Fetching global data...');
         const [statsRes, chatsRes, usersRes, agentsRes] = await Promise.all([
             authenticatedFetch('/api/admin/stats'),
             authenticatedFetch('/api/admin/chats'),
@@ -2377,6 +2388,8 @@ async function fetchAdminData() {
             document.getElementById('admin-stat-users').textContent = adminStats.users || 0;
             document.getElementById('admin-stat-leads').textContent = adminStats.leads || 0;
             document.getElementById('admin-stat-banned').textContent = adminStats.banned || 0;
+        } else {
+            console.error('[Admin] Stats fetch failed:', statsRes.status);
         }
 
         if (chatsRes.ok) {
