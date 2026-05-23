@@ -46,8 +46,15 @@ function chunkText(text, chunkSize = 1000, overlap = 200) {
 async function loadGlobalBans() {
     try {
         const { data, error } = await supabase.from('global_bans').select('chat_id');
-        if (!error && data) { bannedUsers = data.map(b => b.chat_id.toString()); }
-    } catch(e) { console.error('Ban load error:', e); }
+        if (error) {
+            console.error('[Ban System] Error loading global bans:', error.message);
+            return;
+        }
+        if (data) { 
+            bannedUsers = data.map(b => b.chat_id.toString()); 
+            console.log(`[Ban System] Loaded ${bannedUsers.length} banned users.`);
+        }
+    } catch(e) { console.error('[Ban System] Exception loading global bans:', e.message); }
 }
 
 async function authMiddleware(req, res, next) {
@@ -508,10 +515,26 @@ app.get('/api/admin/chats', authMiddleware, adminMiddleware, async (req, res) =>
 });
 
 app.post('/api/admin/ban', authMiddleware, adminMiddleware, async (req, res) => {
-    const { chatId, action } = req.body; const idStr = chatId.toString();
-    if (action === 'ban') { await supabase.from('global_bans').upsert({ chat_id: idStr }); if (!bannedUsers.includes(idStr)) bannedUsers.push(idStr); }
-    else { await supabase.from('global_bans').delete().eq('chat_id', idStr); bannedUsers = bannedUsers.filter(id => id !== idStr); }
-    res.json({ success: true });
+    const { chatId, action } = req.body; 
+    const idStr = chatId.toString();
+    
+    try {
+        if (action === 'ban') { 
+            const { error } = await supabase.from('global_bans').upsert({ chat_id: idStr }); 
+            if (error) throw error;
+            if (!bannedUsers.includes(idStr)) bannedUsers.push(idStr); 
+            console.log(`[Ban System] User ${idStr} banned and persisted.`);
+        } else { 
+            const { error } = await supabase.from('global_bans').delete().eq('chat_id', idStr); 
+            if (error) throw error;
+            bannedUsers = bannedUsers.filter(id => id !== idStr); 
+            console.log(`[Ban System] User ${idStr} unbanned and persisted.`);
+        }
+        res.json({ success: true });
+    } catch(e) {
+        console.error(`[Ban System] Failed to ${action} user ${idStr}:`, e.message);
+        res.status(500).json({ error: e.message });
+    }
 });
 
 app.get('/api/admin/system-users', authMiddleware, async (req, res) => {
