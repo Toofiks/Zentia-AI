@@ -310,6 +310,19 @@ app.delete('/api/agents/:id', authMiddleware, async (req, res) => {
     } else res.status(403).send('Forbidden');
 });
 
+app.put('/api/agents/:id/toggle', authMiddleware, async (req, res) => {
+    if (!await checkAccess(req, req.params.id)) return res.status(403).send('Forbidden');
+    const agent = agents.get(req.params.id);
+    if (agent) {
+        agent.isActive = !agent.isActive;
+        if (agent.isActive) startBot(agent); else agent.botInstance?.stop('SIGINT');
+        await supabase.from('agents').update({ isActive: agent.isActive }).eq('id', req.params.id);
+        res.json({ success: true, isActive: agent.isActive });
+    } else {
+        res.status(404).send('Agent not found');
+    }
+});
+
 app.post('/api/leads/:chatId/message', authMiddleware, async (req, res) => {
     if (!await checkAccess(req, req.body.agentId)) return res.status(403).json({ error: 'Forbidden' });
     const agent = agents.get(req.body.agentId);

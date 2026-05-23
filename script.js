@@ -950,14 +950,26 @@ document.body.addEventListener('click', async (e) => {
     }
 
     // Agent Toggle
-    if (e.target.classList.contains('agent-toggle')) {
-        const toggle = e.target;
-        const agentId = toggle.getAttribute('data-id');
+    const agentToggle = e.target.closest('.agent-toggle');
+    if (agentToggle) {
+        const agentId = agentToggle.getAttribute('data-id');
+        
+        // Optimistic UI
+        agentToggle.classList.toggle('active');
         
         try {
             const res = await authenticatedFetch(`/api/agents/${agentId}/toggle`, { method: 'PUT' });
-            if (res.ok) await refreshDashboardData();
-        } catch (err) { console.error('Failed to toggle agent'); }
+            if (res.ok) {
+                await refreshDashboardData();
+            } else {
+                // Revert on failure
+                agentToggle.classList.toggle('active');
+                showToast('Failed to toggle agent', 'error');
+            }
+        } catch (err) { 
+            agentToggle.classList.toggle('active');
+            console.error('Failed to toggle agent'); 
+        }
     }
     
     // Delete Agent
