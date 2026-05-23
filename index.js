@@ -20,6 +20,25 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 const app = express();
 app.set('trust proxy', 1);
 
+// Keep-alive mechanism for Render Free Tier
+app.get('/api/ping', (req, res) => res.send('pong'));
+
+function startKeepAlive() {
+    const url = process.env.DOMAIN_URL;
+    if (!url) return console.log('[Keep-Alive] DOMAIN_URL not set, skipping.');
+    
+    // Ping every 10 minutes (600,000 ms)
+    setInterval(async () => {
+        try {
+            const res = await fetch(`${url}/api/ping`);
+            if (res.ok) console.log(`[Keep-Alive] Ping successful: ${new Date().toISOString()}`);
+        } catch (e) {
+            console.error('[Keep-Alive] Ping failed:', e.message);
+        }
+    }, 600000);
+    console.log(`[Keep-Alive] Started for ${url}`);
+}
+
 const apiLimiter = rateLimit({ windowMs: 15*60*1000, max: 2000, validate:{xForwardedForHeader:false} });
 const promptLimiter = rateLimit({ windowMs: 15*60*1000, max: 100, message: { error: 'Too many prompt requests, please try again later.' } });
 app.use(cors());
@@ -565,6 +584,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', async () => {
     console.log(`[Server] Running on port ${PORT}`);
     await loadAgentsFromDB(); await loadGlobalBans();
+    startKeepAlive();
 });
 
 process.once('SIGINT', () => { agents.forEach(a => a.botInstance?.stop('SIGINT')); process.exit(); });
