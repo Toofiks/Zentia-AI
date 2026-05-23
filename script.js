@@ -2494,14 +2494,22 @@ function renderSystemUsers() {
 }
 
 window.setPrivileges = async (userId, isAdmin) => {
-    const res = await authenticatedFetch('/api/admin/set-privileges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, isAdmin })
-    });
-    if (res.ok) {
-        showToast(`Privileges updated.`);
-        fetchSystemUsers();
+    try {
+        const res = await authenticatedFetch('/api/admin/set-privileges', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, isAdmin })
+        });
+        if (res.ok) {
+            showToast(`Privileges updated.`, 'success');
+            fetchSystemUsers();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showToast(`Update failed: ${err.error || res.statusText}`, 'error');
+        }
+    } catch(e) {
+        console.error('Privileges update failed:', e);
+        showToast('Update failed: Network or Server error', 'error');
     }
 };
 
@@ -2638,13 +2646,19 @@ window.toggleBan = async (chatId, action) => {
         const res = await authenticatedFetch('/api/admin/ban', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, action })
+            body: JSON.stringify({ chatId: chatId.toString(), action })
         });
         if (res.ok) {
-            showToast(`User has been ${action === 'ban' ? 'banned' : 'unbanned'}.`);
+            showToast(`User has been ${action === 'ban' ? 'banned' : 'unbanned'}.`, 'success');
             fetchAdminData();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showToast(`Ban failed: ${err.error || res.statusText}`, 'error');
         }
-    } catch(e) { showToast('Ban failed', 'error'); }
+    } catch(e) { 
+        console.error('Ban failed:', e);
+        showToast('Ban failed: Network or Server error', 'error'); 
+    }
 };
 
 window.deleteChatAdmin = async (id) => {

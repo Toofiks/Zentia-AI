@@ -201,13 +201,13 @@ app.get('/api/leads', authMiddleware, async (req, res) => {
             const { data: owned } = await supabase.from('agents').select('id').eq('user_id', req.user.id);
             const { data: managed } = await supabase.from('agent_managers').select('agentId').eq('email', req.user.email);
             const ids = [...(owned || []).map(a => a.id), ...(managed || []).map(m => m.agentId)];
-            
+
             if (ids.length === 0) return res.json([]);
             query = query.in('agentId', ids);
         }
-        
+
         const { data } = await query.order('timestamp', { ascending: false });
-        res.json(data || []);
+        res.json((data || []).map(l => ({ ...l, chatId: l.chatId.toString() })));
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -219,20 +219,19 @@ app.get('/api/users', authMiddleware, async (req, res) => {
         const { data: owned } = await supabase.from('agents').select('id').eq('user_id', req.user.id);
         const { data: managed } = await supabase.from('agent_managers').select('agentId').eq('email', req.user.email);
         const ids = [...(owned || []).map(a => a.id), ...(managed || []).map(m => m.agentId)];
-        
+
         if (ids.length === 0) return res.json([]);
         query = query.in('agentId', ids);
     }
-    
+
     const { data } = await query;
     const unique = []; const seen = new Set();
-    (data || []).forEach(u => { 
+    (data || []).forEach(u => {
         const idStr = u.chatId.toString();
-        if (!seen.has(idStr)) { unique.push(u); seen.add(idStr); } 
+        if (!seen.has(idStr)) { unique.push({ ...u, chatId: idStr }); seen.add(idStr); }
     });
     res.json(unique);
 });
-
 app.get('/api/agents', authMiddleware, async (req, res) => {
     const { data: owned } = await supabase.from('agents').select('*').eq('user_id', req.user.id);
     const { data: managed } = await supabase.from('agent_managers').select('agentId').eq('email', req.user.email);
@@ -502,7 +501,7 @@ app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req, res) =>
     try {
         const { data, error } = await supabase.from('bot_users').select('*').order('lastActivity', { ascending: false });
         if (error) throw error;
-        res.json((data || []).map(u => ({ ...u, isBanned: bannedUsers.includes(u.chatId.toString()) })));
+        res.json((data || []).map(u => ({ ...u, chatId: u.chatId.toString(), isBanned: bannedUsers.includes(u.chatId.toString()) })));
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -510,7 +509,7 @@ app.get('/api/admin/chats', authMiddleware, adminMiddleware, async (req, res) =>
     try {
         const { data, error } = await supabase.from('chat_sessions').select('*').order('updated_at', { ascending: false }).limit(200);
         if (error) throw error;
-        res.json(data || []);
+        res.json((data || []).map(s => ({ ...s, chatId: s.chatId.toString() })));
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
