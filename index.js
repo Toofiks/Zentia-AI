@@ -78,6 +78,13 @@ async function checkAccess(req, agentId) {
 
 function startBot(agent) {
     const bot = new Telegraf(agent.token); agent.botInstance = bot;
+    
+    // Fetch bot username for UI links
+    bot.telegram.getMe().then(me => {
+        agent.botUsername = me.username;
+        supabase.from('agents').update({ botUsername: me.username }).eq('id', agent.id).catch(() => {});
+    }).catch(err => console.error(`[Bot] Failed to get bot info for ${agent.name}:`, err.message));
+
     bot.on('message', async (ctx) => {
         const chatId = ctx.chat.id.toString();
         if (bannedUsers.includes(chatId)) return;

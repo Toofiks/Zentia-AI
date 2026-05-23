@@ -329,8 +329,9 @@ function renderAgents() {
                     <div class="agent-avatar" style="background: var(--accent);">${agent.name.charAt(0).toUpperCase()}</div>
                     <div class="agent-info">
                         <div style="display: flex; align-items: center; gap: 0.4rem;">
-                            <p class="name">${agent.name}</p>
-                            ${!isOwner ? '<span style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.2);">Team</span>' : ''}
+                            L332-                             <p class="name">${agent.name}</p>
+                            L333+                             ${agent.botUsername ? `<a href="https://t.me/${agent.botUsername}" target="_blank" title="Open in Telegram" style="color: var(--fg-muted); display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a>` : ''}
+                            L334-                             ${!isOwner ? '<span style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.2);">Team</span>' : ''}
                         </div>
                         <p class="status ${statusClass}">${statusText}</p>
                     </div>
@@ -361,7 +362,10 @@ function renderAgents() {
                         </div>
                         <div class="agent-toggle ${activeClass}" data-id="${agent.id}"></div>
                     </div>
-                    <h3 style="margin: 1rem 0 0.25rem;">${agent.name}</h3>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+                        <h3 style="margin: 0;">${agent.name}</h3>
+                        ${agent.botUsername ? `<a href="https://t.me/${agent.botUsername}" target="_blank" title="Open in Telegram" style="color: var(--fg-muted); display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a>` : ''}
+                    </div>
                     <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${agent.prompt}</p>
                     <p style="color: var(--fg-light); font-size: 0.75rem; margin-bottom: 1.5rem; font-family: monospace;">Model: ${agent.model}</p>
 
