@@ -101,7 +101,7 @@ function startBot(agent) {
     // Fetch bot username for UI links
     bot.telegram.getMe().then(me => {
         agent.botUsername = me.username;
-        supabase.from('agents').update({ botUsername: me.username }).eq('id', agent.id).catch(() => {});
+        supabase.from('agents').update({ botUsername: me.username }).eq('id', agent.id).then(()=>{}).catch(() => {});
     }).catch(err => console.error(`[Bot] Failed to get bot info for ${agent.name}:`, err.message));
 
     bot.on('message', async (ctx) => {
