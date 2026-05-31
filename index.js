@@ -421,20 +421,28 @@ app.post('/api/leads/:chatId/suggest', authMiddleware, async (req, res) => {
         const { data: lead } = await supabase.from('leads').select('history').eq('chatId', req.params.chatId).eq('agentId', req.body.agentId).single();
         if (!lead || !lead.history) return res.status(400).json({ error: 'No history found' });
 
-        const history = lead.history.filter(m => m.role !== 'system');
+        const history = lead.history.filter(m => m.role !== 'system' && !m.content.includes('[Status Update]'));
         const messages = [
             { role: "system", content: `${agent.prompt}\n\nINSTRUCTION FOR THIS REQUEST: You are an AI assistant helping a human sales representative. Review the following conversation history and generate ONE short, highly effective, and natural-sounding response that the human representative should send next. ONLY output the suggested message text, with no surrounding quotes or explanations.` },
             ...history
         ];
 
         const { data: owner } = await supabase.auth.admin.getUserById(agent.user_id);
-        const key = owner?.user?.user_metadata?.openRouterKey || process.env.OPENROUTER_API_KEY;
+        const ownerMeta = owner?.user?.user_metadata || {};
+        const key = ownerMeta.openRouterKey || ownerMeta.geminiKey || process.env.OPENROUTER_API_KEY;
+        
         const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
         const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 200 });
         
-        const suggestion = completion.choices[0]?.message?.content || "Could not generate suggestion.";
+        let suggestion = completion.choices[0]?.message?.content || "";
+        if (!suggestion) {
+            suggestion = "Could not generate suggestion. Please try again.";
+        }
         res.json({ success: true, suggestion });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    } catch (e) { 
+        console.error('[Suggest API] Error:', e.message);
+        res.status(500).json({ error: e.message }); 
+    }
 });
 
 app.put('/api/leads/:chatId/ai-toggle', authMiddleware, async (req, res) => {
