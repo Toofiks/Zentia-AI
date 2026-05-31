@@ -362,9 +362,9 @@ function renderAgents() {
                         </div>
                         <div class="agent-toggle ${activeClass}" data-id="${agent.id}"></div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
-                        <h3 style="margin: 0;">${agent.name}</h3>
-                        ${agent.botUsername ? `<a href="https://t.me/${agent.botUsername}" target="_blank" title="Open in Telegram" style="color: var(--fg-muted); display: flex; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a>` : ''}
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; min-width: 0;">
+                        <h3 class="agent-card-name" style="margin: 0;">${agent.name}</h3>
+                        ${agent.botUsername ? `<a href="https://t.me/${agent.botUsername}" target="_blank" title="Open in Telegram" style="color: var(--fg-muted); display: flex; align-items: center; flex-shrink: 0;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></a>` : ''}
                     </div>
                     <p style="color: var(--fg-muted); font-size: 0.875rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${agent.prompt}</p>
                     <p style="color: var(--fg-light); font-size: 0.75rem; margin-bottom: 1.5rem; font-family: monospace;">Model: ${agent.model}</p>
