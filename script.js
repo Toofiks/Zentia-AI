@@ -753,25 +753,26 @@ function renderInboxLeads() {
     const listEl = document.getElementById('inbox-leads-list');
     if (!listEl) return;
     
+    // Safety check for data type
+    if (!Array.isArray(leads)) {
+        leads = [];
+    }
+
     if (leads.length === 0) {
         listEl.innerHTML = '<p style="padding: 1.5rem; color: var(--fg-muted); font-size: 0.875rem; text-align: center;">No qualified leads yet.</p>';
         return;
     }
 
-    // Only rebuild if length changed or we don't have the elements (simplified diffing)
-    if (listEl.children.length === leads.length && listEl.querySelector('.inbox-item')) {
-        // Just update active state and last message
+    // On mobile, always do a full redraw to prevent layout issues
+    // On PC, we can still use the optimized path if list lengths match
+    if (window.innerWidth > 768 && listEl.children.length === leads.length && listEl.querySelector('.inbox-item')) {
         leads.forEach((lead, i) => {
             const item = listEl.children[i];
             if (item) {
-                if (selectedLeadId === lead.chatId) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
+                if (selectedLeadId === lead.chatId) item.classList.add('active');
+                else item.classList.remove('active');
                 const p = item.querySelector('.inbox-item-content p');
                 if (p) p.textContent = lead.lastMessage;
-                
                 const time = item.querySelector('.inbox-item-time');
                 if (time) {
                     const d = new Date(lead.timestamp);
@@ -782,6 +783,7 @@ function renderInboxLeads() {
         return;
     }
 
+    // Standard Render Path
     listEl.innerHTML = '';
     leads.forEach(lead => {
         const isActive = selectedLeadId === lead.chatId ? 'active' : '';
@@ -796,10 +798,10 @@ function renderInboxLeads() {
             <div class="inbox-item-avatar">${initial}</div>
             <div class="inbox-item-content">
                 <div class="inbox-item-header">
-                    <h4>${lead.username}</h4>
+                    <h4>${lead.username || 'Anonymous'}</h4>
                     <span class="inbox-item-time">${timeStr}</span>
                 </div>
-                <p>${lead.lastMessage}</p>
+                <p>${lead.lastMessage || 'No messages'}</p>
             </div>
         `;
         item.onclick = () => selectLead(lead.chatId);
