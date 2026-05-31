@@ -1914,7 +1914,8 @@ p {
   }
 
   .container {
-    padding: 0 1.5rem !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
     width: 100%;
     box-sizing: border-box;
   }
@@ -2351,7 +2352,8 @@ p {
   }
 
   .container {
-    padding: 0 1rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
   
   .hero-title {
