@@ -922,8 +922,6 @@ function selectLead(chatId) {
     }
     
     const historyEl = document.getElementById('inbox-chat-history');
-    historyEl.innerHTML = '';
-    historyEl.dataset.chatId = chatId;
     
     // Call updateChatHistory to render messages with delete buttons
     updateChatHistory(chatId);
