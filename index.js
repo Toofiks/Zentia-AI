@@ -422,24 +422,49 @@ app.post('/api/leads/:chatId/suggest', authMiddleware, async (req, res) => {
         if (!lead || !lead.history) return res.status(400).json({ error: 'No history found' });
 
         const history = lead.history.filter(m => m.role !== 'system' && !m.content.includes('[Status Update]'));
-        const messages = [
-            { role: "system", content: agent.prompt },
-            ...history.map(m => ({ role: m.role, content: m.content })),
-            { role: "system", content: "INSTRUCTION FOR THIS REQUEST: You are an AI assistant helping a human sales representative. Review the above conversation history and generate ONE short, highly effective, and natural-sounding response that the human representative should send next. ONLY output the suggested message text, with no surrounding quotes or explanations. Do not output anything else." }
-        ];
+        const lastUserMessage = [...history].reverse().find(m => m.role === 'user')?.content || "";
 
         const { data: owner } = await supabase.auth.admin.getUserById(agent.user_id);
         const ownerMeta = owner?.user?.user_metadata || {};
-        const key = ownerMeta.openRouterKey || process.env.OPENROUTER_API_KEY;
+        const key = ownerMeta.openRouterKey || ownerMeta.geminiKey || process.env.OPENROUTER_API_KEY;
+        const geminiKey = ownerMeta.geminiKey || process.env.GEMINI_API_KEY;
+
+        // RAG context for Suggestion
+        let ragContext = "";
+        if (geminiKey && lastUserMessage) {
+            try {
+                const genAI = new GoogleGenerativeAI(geminiKey);
+                const embedModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+                const result = await embedModel.embedContent(lastUserMessage);
+                const queryEmbedding = result.embedding.values;
+                const { data: chunks } = await supabase.rpc('match_knowledge', { query_embedding: queryEmbedding, match_threshold: 0.7, match_count: 3, p_agent_id: agent.id });
+                if (chunks?.length > 0) ragContext = "\n\nKNOWLEDGE BASE CONTEXT:\n" + chunks.map(c => c.content).join("\n\n");
+            } catch(e) { console.error('[Suggest RAG] Error:', e.message); }
+        }
+
+        const modelMapping = {
+            'gemini-2.5-flash': 'google/gemini-2.0-flash-001',
+            'gemini-2.5-pro': 'google/gemini-pro-1.5',
+            'gemini-3-flash-preview': 'google/gemini-2.0-flash-001',
+            'gemini-3.1-pro-preview': 'google/gemini-pro-1.5'
+        };
+        const realModel = modelMapping[agent.model] || agent.model;
+
+        const messages = [
+            { role: "system", content: agent.prompt + ragContext },
+            ...history.map(m => ({ role: m.role, content: m.content })),
+            { role: "user", content: "INSTRUCTION: Based on the conversation above, provide the single most effective next message for the sales representative to send. ONLY output the message text. No quotes, no preamble, no explanations." }
+        ];
         
         const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
-        const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 300 });
+        const completion = await activeOpenai.chat.completions.create({ model: realModel, messages, max_tokens: 300 });
         
         let suggestion = completion.choices[0]?.message?.content || "";
-        suggestion = suggestion.trim().replace(/^["']|["']$/g, ''); // strip quotes just in case
+        suggestion = suggestion.trim().replace(/^["']|["']$/g, '');
 
         if (!suggestion) {
-            suggestion = "Could not generate suggestion. Please try again.";
+            console.warn('[Suggest API] Model returned empty response for agent:', agent.id);
+            suggestion = "Could not generate suggestion. The model returned an empty response.";
         }
         res.json({ success: true, suggestion });
     } catch (e) { 
