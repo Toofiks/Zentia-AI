@@ -423,18 +423,21 @@ app.post('/api/leads/:chatId/suggest', authMiddleware, async (req, res) => {
 
         const history = lead.history.filter(m => m.role !== 'system' && !m.content.includes('[Status Update]'));
         const messages = [
-            { role: "system", content: `${agent.prompt}\n\nINSTRUCTION FOR THIS REQUEST: You are an AI assistant helping a human sales representative. Review the following conversation history and generate ONE short, highly effective, and natural-sounding response that the human representative should send next. ONLY output the suggested message text, with no surrounding quotes or explanations.` },
-            ...history
+            { role: "system", content: agent.prompt },
+            ...history.map(m => ({ role: m.role, content: m.content })),
+            { role: "system", content: "INSTRUCTION FOR THIS REQUEST: You are an AI assistant helping a human sales representative. Review the above conversation history and generate ONE short, highly effective, and natural-sounding response that the human representative should send next. ONLY output the suggested message text, with no surrounding quotes or explanations. Do not output anything else." }
         ];
 
         const { data: owner } = await supabase.auth.admin.getUserById(agent.user_id);
         const ownerMeta = owner?.user?.user_metadata || {};
-        const key = ownerMeta.openRouterKey || ownerMeta.geminiKey || process.env.OPENROUTER_API_KEY;
+        const key = ownerMeta.openRouterKey || process.env.OPENROUTER_API_KEY;
         
         const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
-        const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 200 });
+        const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 300 });
         
         let suggestion = completion.choices[0]?.message?.content || "";
+        suggestion = suggestion.trim().replace(/^["']|["']$/g, ''); // strip quotes just in case
+
         if (!suggestion) {
             suggestion = "Could not generate suggestion. Please try again.";
         }
