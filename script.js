@@ -642,9 +642,12 @@ let lastSeenMessageCount = {};
 
 async function fetchLeads() {
     try {
+        console.log('[Inbox] Fetching leads...');
         const response = await authenticatedFetch('/api/leads');
         if (response.ok) {
-            leads = await safeJson(response);
+            const data = await safeJson(response);
+            leads = Array.isArray(data) ? data : [];
+            console.log(`[Inbox] Fetched ${leads.length} leads.`);
             
             // Notification Logic
             if (Notification.permission === 'granted') {
@@ -662,8 +665,15 @@ async function fetchLeads() {
             if (selectedLeadId) {
                 updateChatHistory(selectedLeadId);
             }
+        } else {
+            console.error('[Inbox] Failed to fetch leads:', response.status);
+            // On mobile, show a toast so the user knows something is wrong
+            if (window.innerWidth <= 768) showToast('Failed to load chats. Please refresh.', 'error');
         }
-    } catch (e) { console.error('Failed to fetch leads:', e); }
+    } catch (e) { 
+        console.error('[Inbox] Error fetching leads:', e); 
+        if (window.innerWidth <= 768) showToast('Connection error. Check your internet.', 'error');
+    }
 }
 
 function updateChatHistory(chatId) {
