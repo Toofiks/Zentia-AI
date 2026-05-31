@@ -442,14 +442,6 @@ app.post('/api/leads/:chatId/suggest', authMiddleware, async (req, res) => {
             } catch(e) { console.error('[Suggest RAG] Error:', e.message); }
         }
 
-        const modelMapping = {
-            'gemini-2.5-flash': 'google/gemini-2.0-flash-001',
-            'gemini-2.5-pro': 'google/gemini-pro-1.5',
-            'gemini-3-flash-preview': 'google/gemini-2.0-flash-001',
-            'gemini-3.1-pro-preview': 'google/gemini-pro-1.5'
-        };
-        const realModel = modelMapping[agent.model] || agent.model;
-
         const messages = [
             { role: "system", content: agent.prompt + ragContext },
             ...history.map(m => ({ role: m.role, content: m.content })),
@@ -457,7 +449,7 @@ app.post('/api/leads/:chatId/suggest', authMiddleware, async (req, res) => {
         ];
         
         const activeOpenai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey: key });
-        const completion = await activeOpenai.chat.completions.create({ model: realModel, messages, max_tokens: 300 });
+        const completion = await activeOpenai.chat.completions.create({ model: agent.model, messages, max_tokens: 300 });
         
         let suggestion = completion.choices[0]?.message?.content || "";
         suggestion = suggestion.trim().replace(/^["']|["']$/g, '');
