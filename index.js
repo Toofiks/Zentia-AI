@@ -181,14 +181,20 @@ function startBot(agent) {
 
             let cleanResponse = aiResponse.replace(/\[MEETING_BOOKED\]/g, '').replace(/\[LEAD_QUALIFIED\]/g, '').trim();
 
-            try {
-                let formattedResponse = cleanResponse.replace(/\*\*(.*?)\*\*/gs, '*$1*');
-                await ctx.reply(formattedResponse, { parse_mode: 'Markdown' });
-            } catch(e) {
-                await ctx.reply(cleanResponse);
+            if (cleanResponse) {
+                try {
+                    let formattedResponse = cleanResponse.replace(/\*\*(.*?)\*\*/gs, '*$1*');
+                    await ctx.reply(formattedResponse, { parse_mode: 'Markdown' });
+                } catch(e) {
+                    try {
+                        await ctx.reply(cleanResponse);
+                    } catch(innerE) {
+                        console.error('Failed to reply with cleanResponse:', innerE.message);
+                    }
+                }
             }
             
-            history.push({ role: "assistant", content: cleanResponse, timestamp: new Date().toISOString() });
+            history.push({ role: "assistant", content: cleanResponse || "[Status Update]", timestamp: new Date().toISOString() });
 
             if (sess?.[0]) await supabase.from('chat_sessions').update({ history, updated_at: new Date().toISOString() }).eq('id', sess[0].id);
             else await supabase.from('chat_sessions').insert({ chatId, agentId: agent.id, history });
