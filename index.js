@@ -24,19 +24,22 @@ app.set('trust proxy', 1);
 app.get('/api/ping', (req, res) => res.send('pong'));
 
 function startKeepAlive() {
-    const url = process.env.DOMAIN_URL;
-    if (!url) return console.log('[Keep-Alive] DOMAIN_URL not set, skipping.');
+    const url = process.env.RENDER_EXTERNAL_URL || process.env.DOMAIN_URL;
+    if (!url) return console.warn('[Keep-Alive] Neither RENDER_EXTERNAL_URL nor DOMAIN_URL set. Self-ping disabled.');
     
-    // Ping every 10 minutes (600,000 ms)
+    // Ping every 5 minutes (300,000 ms) to be safe against Render's 15-min sleep
     setInterval(async () => {
         try {
-            const res = await fetch(`${url}/api/ping`);
-            if (res.ok) console.log(`[Keep-Alive] Ping successful: ${new Date().toISOString()}`);
+            const res = await fetch(`${url}/api/ping`, {
+                headers: { 'User-Agent': 'Zentia-KeepAlive-Bot/1.0' }
+            });
+            if (res.ok) console.log(`[Keep-Alive] Ping successful at ${new Date().toLocaleTimeString()} to ${url}`);
+            else console.warn(`[Keep-Alive] Ping failed with status ${res.status}`);
         } catch (e) {
-            console.error('[Keep-Alive] Ping failed:', e.message);
+            console.error('[Keep-Alive] Ping Exception:', e.message);
         }
-    }, 600000);
-    console.log(`[Keep-Alive] Started for ${url}`);
+    }, 300000);
+    console.log(`[Keep-Alive] Mechanism active for: ${url}`);
 }
 
 const apiLimiter = rateLimit({ windowMs: 15*60*1000, max: 2000, validate:{xForwardedForHeader:false} });
