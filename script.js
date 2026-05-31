@@ -265,7 +265,7 @@ async function refreshDashboardData() {
             const newLeads = await safeJson(leadsRes);
 
             // Notification Logic
-            if (Notification.permission === 'granted' && leads.length > 0) {
+            if (Notification.permission === 'granted' && leads.length > 0 && Array.isArray(newLeads)) {
                 newLeads.forEach(lead => {
                     const oldCount = leads.find(l => l.chatId === lead.chatId)?.history.length || 0;
                     const count = lead.history.length;
@@ -276,7 +276,7 @@ async function refreshDashboardData() {
                 });
             }
 
-            leads = newLeads;
+            leads = Array.isArray(newLeads) ? newLeads : [];
             renderInboxLeads();
             if (selectedLeadId) updateChatHistory(selectedLeadId);
             if (window.activeView === 'analytics') updateAnalyticsChart();

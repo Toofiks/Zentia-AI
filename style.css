@@ -2189,17 +2189,23 @@ p {
 
   /* Mobile Inbox Layout */
   .inbox-container {
-    height: calc(100vh - 120px) !important;
+    height: 600px !important;
+    max-height: 85vh !important;
     position: relative;
     border-radius: var(--radius-md) !important;
     display: flex;
     overflow: hidden;
+    background: var(--bg-secondary);
   }
   .inbox-sidebar {
     width: 100% !important;
     min-width: 100% !important;
-    transition: transform 0.3s ease;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     border-right: none !important;
+    z-index: 10;
   }
   .inbox-main {
     position: absolute !important;
@@ -2208,8 +2214,8 @@ p {
     width: 100%;
     height: 100%;
     transform: translateX(100%);
-    transition: transform 0.3s ease;
-    background: #fdfdfd;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: #ffffff;
     z-index: 20;
     display: flex;
     flex-direction: column;
