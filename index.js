@@ -165,19 +165,44 @@ function startBot(agent) {
                 max_tokens: 1000 
             });
             const aiResponse = completion.choices[0]?.message?.content || "No response";
-            await ctx.reply(aiResponse);
-            
-            history.push({ role: "assistant", content: aiResponse, timestamp: new Date().toISOString() });
 
-            if (sess?.[0]) await supabase.from('chat_sessions').update({ history, updated_at: new Date().toISOString() }).eq('id', sess[0].id);
-            else await supabase.from('chat_sessions').insert({ chatId, agentId: agent.id, history });
+            // Track tokens
+            const usedTokens = completion.usage?.total_tokens || 0;
+            if (usedTokens > 0) {
+                agent.tokensUsed = (agent.tokensUsed || 0) + usedTokens;
+                await supabase.from('agents').update({ tokensUsed: agent.tokensUsed }).eq('id', agent.id);
+            }
 
             let status = null;
             if (aiResponse.includes('[MEETING_BOOKED]')) status = 'Meeting Booked';
             else if (aiResponse.includes('[LEAD_QUALIFIED]')) status = 'Qualified';
 
+            let cleanResponse = aiResponse.replace(/\[MEETING_BOOKED\]/g, '').replace(/\[LEAD_QUALIFIED\]/g, '').trim();
+
+            try {
+                let formattedResponse = cleanResponse.replace(/\*\*(.*?)\*\*/gs, '*$1*');
+                await ctx.reply(formattedResponse, { parse_mode: 'Markdown' });
+            } catch(e) {
+                await ctx.reply(cleanResponse);
+            }
+            
+            history.push({ role: "assistant", content: cleanResponse, timestamp: new Date().toISOString() });
+
+            if (sess?.[0]) await supabase.from('chat_sessions').update({ history, updated_at: new Date().toISOString() }).eq('id', sess[0].id);
+            else await supabase.from('chat_sessions').insert({ chatId, agentId: agent.id, history });
+
             if (status) {
-                await supabase.from('leads').upsert({ chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, history, status, lastMessage: aiResponse, timestamp: new Date().toISOString(), user_id: agent.user_id }, { onConflict: 'chatId, agentId' });
+                const { data: existingLead } = await supabase.from('leads').select('id').eq('chatId', chatId).eq('agentId', agent.id).limit(1);
+                if (existingLead && existingLead.length > 0) {
+                    await supabase.from('leads').update({
+                        history, status, lastMessage: cleanResponse, timestamp: new Date().toISOString(), user_id: agent.user_id
+                    }).eq('id', existingLead[0].id);
+                } else {
+                    await supabase.from('leads').insert({ 
+                        chatId, username: ctx.from.username || 'Anon', agentId: agent.id, agentName: agent.name, 
+                        history, status, lastMessage: cleanResponse, timestamp: new Date().toISOString(), user_id: agent.user_id 
+                    });
+                }
                 
                 // Trigger Webhook if configured
                 if (agent.analytics && agent.analytics.webhookUrl) {
