@@ -1,69 +1,90 @@
-# Zentia AI - Autonomous Sales Agents for Telegram
+<div align="center">
+  <br>
+  <h1>🚀 Zentia AI: The Open-Source AI Business OS</h1>
+  <p>
+    <b>Autonomous AI SDRs, Intelligent CRM, and Financial Orchestration — Built for the Open Web.</b>
+  </p>
+  
+  <a href="https://github.com/Toofiks/Zentia-AI/stargazers"><img src="https://img.shields.io/github/stars/Toofiks/Zentia-AI?style=for-the-badge&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/Toofiks/Zentia-AI/network/members"><img src="https://img.shields.io/github/forks/Toofiks/Zentia-AI?style=for-the-badge&color=blue" alt="Forks"></a>
+  <a href="https://github.com/Toofiks/Zentia-AI/issues"><img src="https://img.shields.io/github/issues/Toofiks/Zentia-AI?style=for-the-badge&color=green" alt="Issues"></a>
+  <a href="https://github.com/Toofiks/Zentia-AI/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-red.svg?style=for-the-badge" alt="License"></a>
+</div>
 
-Zentia AI is a high-performance platform for deploying and managing autonomous AI sales agents on Telegram. It automates top-of-funnel outreach, lead qualification, and meeting bookings.
+<br>
 
-## 🚀 Key Features
-- **Instant Deployment:** Connect any Telegram bot token in seconds.
-- **Multimodal AI:** Supports text, voice, and vision models (Gemini Flash & Pro).
-- **Interactive Inbox:** Real-time chat management with lead status tracking.
-- **Advanced Knowledge Base:** Upload PDFs/TXT to train your agents on your product.
-- **CRM Integrations:** Native support for Webhooks and Google Sheets.
-- **White-label Branding:** Remove "Powered by Zentia" on Enterprise plans.
+Zentia is an open-source, AI-native business orchestration platform that democratizes access to intelligent CRM and financial automation. It provides a modular, self-hosted alternative to proprietary SaaS, integrating Stripe and LLMs (Google Gemini, OpenAI, OpenRouter) directly into core business logic.
+
+As AI shifts from a "feature" to "infrastructure," Zentia serves as a critical framework for developers building the next generation of automated enterprises, ensuring transparency and data sovereignty for the OSS ecosystem.
+
+## ✨ Why Zentia?
+
+Most "AI Sales" tools are closed-source, expensive, and opaque with customer data. Zentia shifts the paradigm:
+- **Data Sovereignty:** You host the DB (Supabase/PostgreSQL). Your customer data stays yours.
+- **Model Agnostic:** Plug in Gemini, OpenAI, or any model via OpenRouter.
+- **Native Monetization:** Stripe is deeply integrated for instant AI-driven subscriptions.
+- **Autonomous Agents:** Agents capable of understanding text, vision, and voice context via Telegram, built to qualify leads and orchestrate bookings without human intervention.
 
 ## 🛠 Tech Stack
-- **Frontend:** Vanilla JS, CSS3 (Modern Glassmorphism), HTML5.
-- **Backend:** Node.js (Express).
-- **Database:** Supabase (PostgreSQL & Auth).
-- **AI Engine:** OpenRouter & Google Gemini API.
-- **Payments:** Stripe Subscriptions.
+
+- **Core:** Node.js (Express)
+- **AI/LLM:** `@google/generative-ai` (Gemini), `openai`, OpenRouter
+- **Bot Interface:** `telegraf` (Telegram)
+- **Database:** Supabase (PostgreSQL & Auth)
+- **Payments:** `stripe`
+- **Frontend:** Vanilla JS / HTML5 / CSS3 (Glassmorphism UI)
 
 ## 📦 Getting Started
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/zentia-ai/zentia-bot.git
-    cd zentia-bot
-    ```
+### 1. Clone the repository
+```bash
+git clone https://github.com/Toofiks/Zentia-AI.git
+cd Zentia-AI
+```
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+### 2. Install dependencies
+```bash
+npm install
+```
 
-3.  **Setup Environment Variables:**
-    Create a `.env` file in the root directory and add:
-    ```env
-    # AI API Keys
-    OPENROUTER_API_KEY=your_key
-    OPENAI_API_KEY=your_key (optional for voice)
-    
-    # Supabase (Admin)
-    SUPABASE_URL=your_url
-    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-    
-    # Payments (Optional)
-    STRIPE_SECRET_KEY=your_key
-    STRIPE_WEBHOOK_SECRET=your_key
-    STRIPE_PRICE_ID_STARTER=...
-    STRIPE_PRICE_ID_PRO=...
-    STRIPE_PRICE_ID_ENTERPRISE=...
-    ```
+### 3. Setup Environment Variables
+Create a `.env` file in the root directory. *Ensure you never commit this file.*
+```env
+# AI Models
+OPENROUTER_API_KEY=your_key
+OPENAI_API_KEY=your_key
+GEMINI_API_KEY=your_key
 
-4.  **Run the project:**
-    ```bash
-    npm start
-    ```
+# Supabase (Database & Auth)
+SUPABASE_URL=your_url
+SUPABASE_SERVICE_ROLE_KEY=your_key
 
-## 📂 Project Architecture
-- `index.js`: Main server entry point and bot orchestration.
-- `script.js`: Frontend logic and Supabase integration.
-- `index.html`: Main dashboard UI.
-- `run_tests.js`: Comprehensive test suite.
+# Stripe (Monetization)
+STRIPE_SECRET_KEY=your_key
+STRIPE_WEBHOOK_SECRET=your_key
+STRIPE_PRICE_ID_STARTER=...
+```
 
-## 🌐 Deployment
-This project is ready to be deployed on platforms like **Railway**, **Render**, or **Vercel** (with a persistent server for bot polling).
+### 4. Run the Engine
+```bash
+npm start
+```
 
-## ⚖️ License
-Distributed under the ISC License. See `LICENSE` for more information.
+## 🤝 Contributing
 
-© 2026 Zentia AI Inc.
+We believe the future of enterprise software is Open Source. Whether you're fixing a bug, adding a new LLM provider, or writing documentation, your help is welcome!
+
+Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting Pull Requests.
+
+## 🛡️ License
+
+Zentia is proudly open-source and dual-licensed. 
+The public community version is licensed under the **GNU AGPLv3**. 
+See the `LICENSE` file for more details. 
+
+> *Note: AGPLv3 guarantees that any improvements made to Zentia and offered as a network service must also be made open-source. This protects the community from predatory commercial enclosure.*
+
+---
+<div align="center">
+  <b>Built by the Open Source AI Community.</b>
+</div>

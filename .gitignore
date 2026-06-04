@@ -30,6 +30,11 @@ properties.json
 uploads/
 temp_*.ogg
 
+# Gemini CLI artifacts
+.agents/
+skills-lock.json
+.gemini/
+
 # OS specific files
 .DS_Store
 Thumbs.db
